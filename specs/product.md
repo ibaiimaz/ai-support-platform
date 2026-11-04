@@ -8,11 +8,11 @@ AI Support Platform es un proyecto educativo para construir un backend que integ
 
 Clasificar una descripción de incidencia en una única categoría:
 
-| Categoría | Significado |
-| --- | --- |
-| `BUG` | Comportamiento que incumple una funcionalidad o requisito existente. |
-| `FEATURE` | Solicitud de nueva funcionalidad o mejora. |
-| `QUESTION` | Consulta o petición de información. |
+| Categoría  | Significado                                                          |
+| ---------- | -------------------------------------------------------------------- |
+| `BUG`      | Comportamiento que incumple una funcionalidad o requisito existente. |
+| `FEATURE`  | Solicitud de nueva funcionalidad o mejora.                           |
+| `QUESTION` | Consulta o petición de información.                                  |
 
 La [iteración 001](iterations/001-classification.md) define las reglas operativas, el contrato HTTP y los criterios verificables. La interfaz inicial es una API REST síncrona. No hay base de datos, colas, autenticación ni frontend.
 

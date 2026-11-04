@@ -2,21 +2,21 @@
 
 ## Estado y alcance
 
-Diseño aprobado en conversación para la primera iteración; aún no implementado. El contrato normativo se mantiene en la [especificación 001](iterations/001-classification.md). Esta transcripción documental está pendiente de revisión antes de implementar.
+Arquitectura implementada para la primera iteración; aceptación humana pendiente. El contrato normativo se mantiene en la [especificación 001](iterations/001-classification.md). La aceptación de la implementación se registra mediante el estado de la iteración.
 
 ## Stack
 
-| Elección | Motivo y coste | Alternativa considerada |
-| --- | --- | --- |
-| Node.js LTS soportado, TypeScript estricto, ESM y `tsc` | Entorno reproducible y tipos estáticos; los datos externos siguen necesitando validación | JavaScript reduce herramientas, pero pierde comprobación estática |
-| Fastify | Validación JSON Schema, logging e integración HTTP con `inject`; exige configurar explícitamente el validador | Express requiere más piezas; `node:http`, más código manual |
-| JSON Schema y Ajv como dependencia directa | Construir en el adaptador el esquema desde las categorías comunes y usarlo para structured outputs y validación local; mantener alineados tipos y esquema | Zod añade conversión a JSON Schema |
-| `fetch` y `AbortController` nativos | Evitan SDK y cliente HTTP adicionales; requieren gestionar protocolo y cancelación | SDK de Ollama, innecesario para una única operación |
-| `node:test` y `node:assert/strict` | Sin framework adicional; menos utilidades de mocks | Vitest ofrece más herramientas con otra dependencia |
+| Elección                                                | Motivo y coste                                                                                                                                            | Alternativa considerada                                           |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Node.js LTS soportado, TypeScript estricto, ESM y `tsc` | Entorno reproducible y tipos estáticos; los datos externos siguen necesitando validación                                                                  | JavaScript reduce herramientas, pero pierde comprobación estática |
+| Fastify                                                 | Validación JSON Schema, logging e integración HTTP con `inject`; exige configurar explícitamente el validador                                             | Express requiere más piezas; `node:http`, más código manual       |
+| JSON Schema y Ajv como dependencia directa              | Construir en el adaptador el esquema desde las categorías comunes y usarlo para structured outputs y validación local; mantener alineados tipos y esquema | Zod añade conversión a JSON Schema                                |
+| `fetch` y `AbortController` nativos                     | Evitan SDK y cliente HTTP adicionales; requieren gestionar protocolo y cancelación                                                                        | SDK de Ollama, innecesario para una única operación               |
+| `node:test` y `node:assert/strict`                      | Sin framework adicional; menos utilidades de mocks                                                                                                        | Vitest ofrece más herramientas con otra dependencia               |
 
-Las versiones concretas se fijarán al implementar y se conservarán en el manifiesto y lockfile. No se añaden generadores, frameworks SDD, LangChain ni contenedores de dependencias.
+Las versiones concretas están fijadas en el manifiesto y lockfile. Prettier y ESLint son herramientas de desarrollo para aplicar las [convenciones permanentes](../AGENTS.md#legibilidad-y-mantenibilidad), sin dependencias adicionales de ejecución. ESLint utiliza el parser de TypeScript y reglas puntuales de ESLint Stylistic; se evita una configuración extensa y el análisis de tipos duplicado respecto a `tsc`. No se añaden generadores, frameworks SDD, LangChain ni contenedores de dependencias.
 
-## Componentes previstos
+## Componentes implementados
 
 ```text
 src/
