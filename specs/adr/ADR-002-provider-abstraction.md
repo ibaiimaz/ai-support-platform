@@ -1,6 +1,6 @@
 # ADR-002: desacoplar el proveedor de LLM
 
-- Estado: decisión aprobada en conversación; documentación pendiente de revisión.
+- Estado: Approved. Decisión y documentación aprobadas por el responsable del proyecto.
 - Ámbito: [arquitectura](../architecture.md) e [iteración 001](../iterations/001-classification.md).
 
 ## Contexto
