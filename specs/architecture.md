@@ -2,7 +2,7 @@
 
 ## Estado y alcance
 
-Arquitectura implementada para la primera iteración; aceptación humana pendiente. El contrato normativo se mantiene en la [especificación 001](iterations/001-classification.md). La aceptación de la implementación se registra mediante el estado de la iteración.
+Arquitectura implementada para la primera iteración, en estado `Verified` desde el **2026-11-04** tras revisión y aceptación humana. El contrato normativo se mantiene en la [especificación 001](iterations/001-classification.md). La aceptación de la implementación se registra mediante el estado de la iteración.
 
 ## Stack
 
