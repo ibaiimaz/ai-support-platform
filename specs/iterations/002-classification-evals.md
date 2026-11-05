@@ -1,8 +1,12 @@
 # I002 — LLM Classification Evaluation
 
-Estado: **Approved**. Fecha de preparación y aprobación: **2026-11-05**.
+Estado: **Verified**. Fecha de preparación y aprobación: **2026-11-05**.
 
-Especificación aprobada por el responsable del proyecto con las decisiones de la sección 12. La aprobación documental no autoriza todavía implementar el runner, generar el dataset ni modificar el clasificador. Se requiere autorización explícita posterior para comenzar la implementación.
+Fecha de verificación y aceptación humana: **2026-11-05**.
+
+Inicio de implementación: **2026-11-05**.
+
+Iteración cerrada tras aceptación explícita del responsable del proyecto. Se han completado los 14 criterios de aceptación, incluida la revisión humana del dataset v2 y la ejecución real con Ollama; evidencia y baseline experimental en la sección 17.
 
 Ciclo: `Draft → Approved → In Progress → Implemented → Verified`. `Verified` requiere revisión y aceptación humana, además de una ejecución real con Ollama.
 
@@ -45,11 +49,11 @@ El runner es otro punto de composición. No importa `src/main.ts`, porque abre e
 
 No se necesitan cambios en el caso de uso, puerto, dominio, contrato HTTP ni manejador de errores de I001.
 
-### Organización aprobada para implementar tras autorización
+### Organización implementada para el punto de control
 
 | Ubicación prevista                 | Responsabilidad                                                   |
 | ---------------------------------- | ----------------------------------------------------------------- |
-| `evals/datasets/incidents-v1.json` | Dataset versionado; no se crea en esta fase.                      |
+| `evals/datasets/incidents-v1.json` | Dataset generado; pendiente de revisión humana.                   |
 | `src/evaluation/dataset.ts`        | Carga y validación completa del dataset antes de inferir.         |
 | `src/evaluation/run-evaluation.ts` | Secuencia de llamadas al caso de uso y resultados individuales.   |
 | `src/evaluation/metrics.ts`        | Cálculo puro y determinista de métricas.                          |
@@ -58,7 +62,7 @@ No se necesitan cambios en el caso de uso, puerto, dominio, contrato HTTP ni man
 | `test/evaluation/`                 | Pruebas deterministas con ejemplos pequeños y proveedor simulado. |
 | `evals/reports/`                   | Informes locales, excluidos de Git.                               |
 
-Se incorporará `npm run eval:classification`, tras `npm run build`, con dataset y directorio de salida fijos para esta iteración. Se añadirá una entrada a `.gitignore`. No hay nuevos flags, dependencias, servicios o contenedores. Las rutas y el script están aprobados como diseño; no son archivos ni comandos disponibles todavía.
+Está disponible `npm run eval:classification`, tras `npm run build`, con dataset y directorio de salida fijos. Los informes están excluidos mediante `.gitignore` y `.prettierignore`. No hay nuevos flags, dependencias, servicios o contenedores. El comando manual se ejecutó con autorización contra Ollama real; el informe identificado en la sección 17 constituye la evidencia de AC-14.
 
 Ventajas: el código de evaluación es pequeño, auditable y reutiliza el comportamiento productivo. Costes: sus errores afectan a la medición y requieren tests propios; una ejecución secuencial tarda más. Alternativas descartadas: medir por HTTP añade transporte ajeno al objetivo; llamar directamente a Ollama desde el runner duplicaría la clasificación; un framework de evaluación añade complejidad sin necesidad actual.
 
@@ -113,7 +117,7 @@ Las etiquetas y la justificación son referencia del evaluador: **solo la descri
 
 El reparto total es 30 evidentes, 21 complejos y 9 adversariales. Los casos mixtos siguen las tres categorías de I001; no se añade abstención. La prueba de exportación a Excel con instrucción para devolver `BUG`, registrada en I001, orientará un caso adversarial de `FEATURE`, sin dar por supuesto su resultado futuro.
 
-Los 60 ejemplos iniciales estarán exclusivamente en español y serán revisados por el responsable antes de la evaluación, conforme a I002-D-03. Solo se crearán después de recibir autorización explícita para implementar.
+Los 60 ejemplos iniciales se generaron en español tras recibir autorización de implementación. La versión de contenido 2 fue revisada y aceptada por el responsable antes de la primera evaluación real, conforme a I002-D-03.
 
 ## 5. Flujo, estados y errores
 
@@ -171,7 +175,7 @@ Para un run completo:
 
 Para cada categoría, `TP` es la diagonal, `FP` la suma restante de su columna y `FN` la suma restante de su fila. En estas métricas semánticas los errores técnicos se excluyen, también de los falsos negativos. Por ello, recall no usa automáticamente los 20 ejemplos previstos: usa el soporte de respuestas válidas de esa categoría. El informe incluye por separado soporte previsto, válido y número de errores por categoría para hacer visible esa diferencia.
 
-Si `V > 0` y un denominador de precision, recall o F1 es cero, se devuelve `0` y conservar el soporte; macro-F1 incluye siempre las tres categorías. Si `V = 0`, todas las métricas semánticas son `null`, la matriz contiene ceros y las dos tasas operativas son `0`.
+Si `V > 0` y un denominador de precision, recall o F1 es cero, se devuelve `0` y se conserva el soporte; macro-F1 incluye siempre las tres categorías. Si `V = 0`, todas las métricas semánticas son `null`, la matriz contiene ceros y las dos tasas operativas son `0`.
 
 Los valores son proporciones entre 0 y 1, no porcentajes. No redondear antes de agregarlos; el JSON conserva la precisión numérica disponible. El resumen de consola puede redondear solo para presentación. Nunca serializar `NaN` o infinito.
 
@@ -240,7 +244,7 @@ Los errores de disponibilidad durante una ejecución completa deben quedar refle
 
 ## 10. Definition of Done y estados
 
-Estado `Approved` alcanzado el **2026-11-05** tras revisión y resolución de I002-D-01 a I002-D-05. La autorización de implementación sigue pendiente y debe ser explícita.
+Estado `Approved` alcanzado el **2026-11-05** tras revisión y resolución de I002-D-01 a I002-D-05. La autorización explícita de implementación se ha recibido el **2026-11-05**, manteniendo el punto de control anterior a la evaluación real.
 
 Para marcar `Implemented`:
 
@@ -272,7 +276,7 @@ Para marcar `Verified`, además:
 
 ## 12. Decisiones aprobadas
 
-Aprobación del responsable del proyecto registrada el **2026-11-05**. No quedan decisiones pendientes de esta revisión; la implementación permanece sin autorizar.
+Aprobación del responsable del proyecto registrada el **2026-11-05**. No quedan decisiones pendientes de esta revisión; la implementación está autorizada desde el **2026-11-05**; la evaluación real se ejecutó con autorización y la iteración ha sido aceptada el **2026-11-05**.
 
 | ID        | Decisión aprobada                                                                                                                                                                    | Implicación                                                                                                                                                                                                                     |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -282,7 +286,7 @@ Aprobación del responsable del proyecto registrada el **2026-11-05**. No quedan
 | I002-D-04 | Reutilizar `OLLAMA_MODEL` y aceptar cualquier modelo configurado correctamente mediante `loadConfig`. La primera evaluación real utilizará `llama3.1:8b`.                            | Registrar el nombre efectivo en cada informe. No imponer una lista de modelos, comprobar su disponibilidad por anticipado ni cambiar el valor inicial de I001. Los fallos del proveedor siguen la política de errores aprobada. |
 | I002-D-05 | Extraer mínimamente el descriptor de inferencia compartido para registrar esquema/opciones efectivos sin copia manual.                                                               | Conservar exactamente comportamiento, valores, mensajes y protocolo del adaptador; proteger la extracción con regresión.                                                                                                        |
 
-Ajuste adicional aprobado: priorizar hashes de dataset y prompt, configuración efectiva y una referencia al código cuando esté disponible. No implementar hashing de módulos o del lockfile ni exigir Git para ejecutar. Los campos y rutas de esta especificación están aprobados como diseño, pero aún no se crean. No hay umbrales mínimos de calidad ni trabajo de mitigación dentro de I002.
+Ajuste adicional aprobado: priorizar hashes de dataset y prompt, configuración efectiva y una referencia al código cuando esté disponible. No implementar hashing de módulos o del lockfile ni exigir Git para ejecutar. Los campos y rutas aprobados están implementados para el punto de control. No hay umbrales mínimos de calidad ni trabajo de mitigación dentro de I002.
 
 ## 13. ADRs
 
@@ -305,10 +309,107 @@ Un ADR adicional solo estaría justificado si se acordara una política transver
 | I002-T-09 | Ejecutar la primera evaluación real completa con `llama3.1:8b` y revisar resultados                                         | I002-AC-14; informe local con modelo efectivo y hash de dataset, sin umbrales ni cambios del prompt o del valor inicial del modelo. |
 | I002-T-10 | Obtener aceptación humana y registrar fecha                                                                                 | Estado `Verified` solo tras revisión explícita.                                                                                     |
 
-La revisión documental y las decisiones de I002-T-01 están completadas. Su condición de autorización explícita de implementación sigue pendiente: no iniciar I002-T-02 ni tareas posteriores hasta recibirla. No generar el dataset, modificar código funcional ni crear commits durante esta actualización.
+I002-T-01 a I002-T-10 completadas. La autorización de evaluación real, la ejecución de I002-T-09 y la aceptación humana de I002-T-10 se registran en la sección 17. No se han creado commits.
 
 ## 15. Registro de aprobación documental
 
 Fecha: **2026-11-05**. El responsable aprueba el enfoque general, las decisiones I002-D-01 a I002-D-05 con el ajuste de modelo configurable y la simplificación de trazabilidad del código. Se han alineado requisitos, criterios de aceptación y tareas con estas decisiones, conservando sus IDs estables.
 
-Estado resultante: **Approved**. No se ha autorizado comenzar la implementación. No se ha generado el dataset ni implementado el runner. Se espera autorización explícita antes de pasar a `In Progress`.
+Estado tras aprobación documental: **Approved**. Posteriormente, el **2026-11-05**, se autoriza implementar y generar el dataset, pasando a **In Progress**. El punto de control se superó posteriormente con la aceptación del dataset v2 y la autorización de evaluación real; el cierre formal figura en la sección 17.
+
+## 16. Punto de control de implementación (registro histórico)
+
+Esta sección conserva la evidencia del punto de control anterior a la revisión del dataset; sus estados pendientes y su hash se refieren a aquel momento, no al cierre actual. La versión 2 y el cierre están registrados en la sección 17.
+
+Fecha: **2026-11-05**. Componentes y tests deterministas completados; se conserva **In Progress** porque la Definition of Done para `Implemented` requiere la revisión del dataset de referencia. No se marca `Verified`.
+
+Dataset completo para revisión: [incidents-v1.json](../../evals/datasets/incidents-v1.json), ID `incidents-es-v1`, versión `1`.
+
+SHA-256 de los bytes entregados: `dde2a1c96a773b64b388ab4786c4c2d3dce04d6dd78b2eac0f20e73c0069b2cd`.
+
+| Categoría | Evidentes (001–010) | Complejos (011–017) | Adversariales (018–020) | Total |
+| --------- | ------------------- | ------------------- | ----------------------- | ----- |
+| BUG       | 10                  | 7                   | 3                       | 20    |
+| FEATURE   | 10                  | 7                   | 3                       | 20    |
+| QUESTION  | 10                  | 7                   | 3                       | 20    |
+| Total     | 30                  | 21                  | 9                       | 60    |
+
+El archivo JSON contiene todos los campos aprobados, incluidas justificaciones. La validación automática cubre estructura, cuotas y unicidad; la revisión humana de corrección y representatividad no se sustituye por esos tests. No se han obtenido predicciones reales sobre el dataset.
+
+| Criterio   | Evidencia determinista y estado                                                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| I002-AC-01 | `test/evaluation/dataset.test.ts`: cuotas y contrato del dataset oficial correctos. Pendiente revisión humana del contenido.                                              |
+| I002-AC-02 | `dataset.test.ts` y `report.test.ts`: rechazo de tipos, campos, duplicados, blancos, Unicode, cuotas y entradas inválidas antes del proveedor.                            |
+| I002-AC-03 | `run-evaluation.test.ts` y `composition.test.ts`: orden, una llamada activa, un argumento normalizado y una llamada por ejemplo.                                          |
+| I002-AC-04 | `run-evaluation.test.ts`: estados y cuatro causas conocidas; continuidad sin reintentos.                                                                                  |
+| I002-AC-05 | `metrics.test.ts`: matriz asimétrica y valores calculados manualmente para cada clase y macro-F1.                                                                         |
+| I002-AC-06 | `metrics.test.ts` y `report.test.ts`: denominadores, soportes y contadores diferenciados.                                                                                 |
+| I002-AC-07 | `metrics.test.ts`: extremos, ausencia de respuestas, clases sin predicciones/respuestas y convenciones cero/null.                                                         |
+| I002-AC-08 | `report.test.ts` y `composition.test.ts`: hashes de bytes/texto, origen sin credenciales, configuración efectiva y referencia al código presente/ausente.                 |
+| I002-AC-09 | `report.test.ts` y `composition.test.ts`: CLI en proceso separado con servidor simulado, código de salida, escritura exclusiva, directorio temporal y fallo de escritura. |
+| I002-AC-10 | `run-evaluation.test.ts` y `report.test.ts`: detención, informe parcial, métricas null y contadores de no intentados.                                                     |
+| I002-AC-11 | `report.test.ts` y `composition.test.ts`: ausencia de texto sensible en salida/informes y exclusión comprobada con `git check-ignore`.                                    |
+| I002-AC-12 | `composition.test.ts` y regresión I001: payload real al servidor simulado, modelo alternativo, prompt exacto y descriptor inmutable; sin HTTP de aplicación.              |
+| I002-AC-13 | `npm run verify`: formato, lint, compilación y suite determinista con regresión I001.                                                                                     |
+| I002-AC-14 | Pendiente. No se ha ejecutado evaluación real; requiere autorización explícita tras revisar este punto de control.                                                        |
+
+I002-T-02 y las tareas técnicas I002-T-04 a I002-T-08 están completadas. I002-T-03 tiene la generación y validación automatizada completadas, pero su revisión humana sigue pendiente. I002-T-09 y I002-T-10 no se han ejecutado.
+
+`npm run verify` completado: formato y lint correctos, compilación estricta correcta y **43 tests correctos** (24 de I001 y 19 de I002), sin fallos, omisiones ni cancelaciones.
+
+Sin desviaciones funcionales conocidas. El archivo `types.ts` agrupa contratos internos de evaluación y `inference-descriptor.ts` materializa la extracción aprobada. La referencia opcional al código usa `git rev-parse HEAD` si está disponible; no identifica cambios locales no confirmados ni calcula hashes de módulos. Los tests de composición usan exclusivamente un servidor local simulado y los informes de pruebas se escriben en directorios temporales.
+
+No se ha cambiado el prompt, el modelo inicial, el puerto, el caso de uso ni los contratos HTTP de I001. No se han creado commits. La siguiente acción requiere revisión humana del dataset y autorización explícita para la evaluación real.
+
+## 17. Cierre y baseline experimental
+
+Estado final: **Verified**, con fecha **2026-11-05**, autorizado explícitamente por el responsable del proyecto tras revisar y aceptar la implementación, el dataset de referencia y los resultados reales. Se cumple la Definition of Done completa.
+
+La revisión del contenido produjo el dataset `incidents-es-v1`, versión de contenido **2**, `schemaVersion: 1`, con **60 ejemplos** sintéticos en español: 20 por categoría, con reparto 10 evidentes, 7 complejos y 3 adversariales por categoría. El responsable aceptó esa versión antes de inferir; no se modificaron sus etiquetas ni justificaciones tras observar predicciones.
+
+- Archivo: [incidents-v1.json](../../evals/datasets/incidents-v1.json).
+- SHA-256: `e17fcb2ea94126809319133a9ba78fa1108e7efe21ed62f45c88167bebe72c90`.
+- Informe local: `evals/reports/fd9c811b-8b65-4230-bc2a-0c57796d63ad.json`, validado y excluido de Git; el archivo generado no se incorpora al repositorio.
+- Identificador de ejecución: `fd9c811b-8b65-4230-bc2a-0c57796d63ad`.
+- Modelo efectivo: `llama3.1:8b`; `temperature: 0`, `stream: false`, timeout 30.000 ms, sin reintentos ni warm-up.
+- Prompt original de I001, SHA-256: `ea81fca7322e307986b0ab3739fc9d73ad2384cc2361da8a0b28cfedf659a9ef`.
+- Ejecución completa: 60 intentos, 44 correctos, 16 incorrectos, 0 errores técnicos, código de salida 0.
+- Accuracy válida: **73,33 %**; éxito extremo a extremo: **73,33 %**; ejecución satisfactoria: **100 %**; macro-F1: **73,02 %**. Los valores del JSON se conservan sin este redondeo de presentación.
+- Latencia total observada por el runner: 21,372 s; media por ejemplo: 356,19 ms.
+
+| Dificultad    | Correctos / total | Accuracy |
+| ------------- | ----------------- | -------- |
+| Evidentes     | 24 / 30           | 80,00 %  |
+| Complejos     | 18 / 21           | 85,71 %  |
+| Adversariales | 2 / 9             | 22,22 %  |
+
+Los desgloses por dificultad son análisis descriptivo posterior del informe, sin cambiar las métricas implementadas en I002. **Siete de los nueve adversariales produjeron la categoría inducida por la instrucción maliciosa.** Ambas categorías erróneas y correctas cumplieron el contrato JSON. La validación técnica no detecta este fallo semántico. No se cambió el prompt ni se corrigió el dataset para ajustar estos resultados.
+
+Matriz de confusión (filas esperadas; columnas predichas):
+
+| Esperada / predicha | BUG | FEATURE | QUESTION |
+| ------------------- | --- | ------- | -------- |
+| BUG                 | 15  | 3       | 2        |
+| FEATURE             | 1   | 17      | 2        |
+| QUESTION            | 6   | 2       | 12       |
+
+### Cumplimiento final de criterios
+
+| ID         | Estado y evidencia                                                                                                   |
+| ---------- | -------------------------------------------------------------------------------------------------------------------- |
+| I002-AC-01 | Cumplido: cuotas y contrato validados; versión 2 revisada y aceptada por el responsable antes de ejecutar.           |
+| I002-AC-02 | Cumplido: validación estricta, duplicados, cuotas y límites, con tests deterministas.                                |
+| I002-AC-03 | Cumplido: orden, normalización, secuencialidad y una llamada por ejemplo comprobados.                                |
+| I002-AC-04 | Cumplido: estados y causas técnicas conocidas, continuidad sin reintentos, cubiertos por tests.                      |
+| I002-AC-05 | Cumplido: matriz asimétrica y métricas contrastadas con cálculos manuales.                                           |
+| I002-AC-06 | Cumplido: denominadores, soportes y contadores diferenciados comprobados.                                            |
+| I002-AC-07 | Cumplido: extremos y convenciones cero/null comprobados.                                                             |
+| I002-AC-08 | Cumplido: metadatos, configuración efectiva y hashes comprobados; informe real coincide con la referencia v2.        |
+| I002-AC-09 | Cumplido: escritura exclusiva, fallos y códigos de salida comprobados; informe real guardado con código 0.           |
+| I002-AC-10 | Cumplido: detención e informe parcial comprobados mediante simulación de excepción inesperada.                       |
+| I002-AC-11 | Cumplido: ausencia de texto sensible y exclusión de informes comprobadas; informe real ignorado por Git.             |
+| I002-AC-12 | Cumplido: reutilización y regresión de payload/prompt; ejecución real con el caso de uso y adaptador existentes.     |
+| I002-AC-13 | Cumplido: `npm run verify` pasó con 43 tests, cero fallos, cancelaciones u omisiones; suite sin Ollama real.         |
+| I002-AC-14 | Cumplido: ejecución real completa identificada arriba, sin errores técnicos, revisada y aceptada por el responsable. |
+
+Esta ejecución es la **baseline experimental** para I003. El dataset es pequeño, sintético y conocido; sus resultados no se extrapolan a tráfico real ni garantizan reproducibilidad bit a bit. El informe permanece local, mientras esta sección conserva la evidencia documental versionable del cierre. La aceptación de I002 no supone solucionar la vulnerabilidad observada.

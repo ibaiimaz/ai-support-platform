@@ -33,18 +33,30 @@ src/
   infrastructure/ollama/
     ollama-classifier.ts
     classification-instructions.ts
+    inference-descriptor.ts
+  evaluation/
+    dataset.ts
+    types.ts
+    run-evaluation.ts
+    metrics.ts
+    report.ts
+    main.ts
   config.ts
   main.ts
 test/
   unit/
   http/
   ollama/
+  evaluation/
+evals/
+  datasets/incidents-v1.json
+  reports/  # Generados localmente, ignorados por Git
 ```
 
 - `domain`: categorías permitidas y tipo de clasificación, independientes del proveedor y sin esquemas de protocolo.
 - `application`: caso de uso, puerto de clasificación y errores técnicos independientes del transporte.
 - `http`: validación de entrada, normalización y traducción de errores al contrato público.
-- `infrastructure/ollama`: instrucciones, protocolo del proveedor, construcción del JSON Schema desde las categorías del dominio, timeout y validación de la respuesta.
+- `infrastructure/ollama`: instrucciones, protocolo del proveedor, descriptor compartido de inferencia (esquema desde las categorías del dominio y opciones), timeout y validación de la respuesta.
 - `config.ts`: lectura y validación de entorno al arrancar.
 - `main.ts`: composición y apertura del servidor; `app.ts` construye la aplicación sin escuchar en un puerto.
 
@@ -62,9 +74,19 @@ El adaptador construye su JSON Schema a partir de la definición común del domi
 
 El adaptador devuelve solo resultados validados. El caso de uso permanece igual al sustituir el proveedor; véase [ADR-002](adr/ADR-002-provider-abstraction.md). La respuesta es síncrona conforme a [ADR-001](adr/ADR-001-sync-classification.md).
 
+## Evaluación semántica I002
+
+La [iteración I002](iterations/002-classification-evals.md) añade un punto de composición manual en `src/evaluation/main.ts`. El flujo es: validar configuración y dataset → instanciar `OllamaClassifier` → llamar a `classifyIncident` secuencialmente → calcular métricas puras → validar y guardar informe JSON local.
+
+El evaluador depende del caso de uso y del puerto existentes, sin importar HTTP ni abrir un servidor. Los tests pueden inyectar un proveedor simulado; la entrada manual usa el adaptador real. Los errores conocidos se conservan como resultados y permiten continuar; una excepción inesperada detiene la ejecución con informe parcial si la escritura es viable. Los detalles normativos de métricas y finalización permanecen en I002.
+
+`inference-descriptor.ts` expone los mismos valores que ya usaba el adaptador, ahora inmutables y compartidos con los metadatos. La extracción no altera mensajes, prompt ni comportamiento productivo. Hay regresión del payload, del hash del prompt de I001 y de sus casos de error.
+
+No se añaden dependencias. Los informes usan hashes del dataset y prompt, configuración efectiva y referencia opcional de Git; no hay hashes de módulos ni del lockfile. Se excluyen de Git y de formato automático. I002 está `Verified` desde el **2026-11-05**, tras aceptar el dataset v2 y la evaluación real identificada en su especificación. La baseline experimental conserva la vulnerabilidad de prompt injection; su cierre no modifica el clasificador. I003 se prepara como especificación `Draft`, sin cambios de arquitectura implementados.
+
 ## Restricciones operativas
 
-La especificación 001 es la única fuente de límites, variables de entorno, códigos de error y políticas de timeout. No hay reintentos, fallback de categoría ni descarga automática de modelos. La API puede arrancar aunque Ollama esté temporalmente inaccesible.
+Para el endpoint, la especificación 001 es la fuente de límites, variables de entorno, códigos de error y políticas de timeout. I002 reutiliza la configuración del proveedor y define por separado los estados de evaluación y códigos de salida del runner. No hay reintentos, fallback de categoría ni descarga automática de modelos. La API puede arrancar aunque Ollama esté temporalmente inaccesible.
 
 Los logs contienen metadatos técnicos y un identificador de petición, sin cuerpos, prompts, descripciones ni respuestas crudas. Los errores externos no se serializan indiscriminadamente.
 

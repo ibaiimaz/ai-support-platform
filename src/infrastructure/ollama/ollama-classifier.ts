@@ -1,22 +1,16 @@
 import { Ajv } from 'ajv';
-import { categories, type Classification } from '../../domain/classification.js';
+import type { Classification } from '../../domain/classification.js';
+import { ollamaInference } from './inference-descriptor.js';
 import type { IncidentClassifier } from '../../application/incident-classifier.js';
 import { ClassificationError } from '../../application/classification-errors.js';
 import type { Config } from '../../config.js';
 import { classificationInstructions } from './classification-instructions.js';
 
-const schema = {
-  type: 'object',
-  required: ['category'],
-  additionalProperties: false,
-  properties: { category: { type: 'string', enum: [...categories] } },
-};
-
 const validate = new Ajv({
   coerceTypes: false,
   removeAdditional: false,
   useDefaults: false,
-}).compile<Classification>(schema);
+}).compile<Classification>(ollamaInference.format);
 
 const object = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -102,7 +96,7 @@ export class OllamaClassifier implements IncidentClassifier {
     const timer = setTimeout(() => controller.abort(), this.config.timeoutMs);
 
     try {
-      const url = new URL('/api/chat', this.config.baseUrl);
+      const url = new URL(ollamaInference.endpoint, this.config.baseUrl);
       const response = await transport(
         () =>
           fetch(url, {
@@ -112,9 +106,9 @@ export class OllamaClassifier implements IncidentClassifier {
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
               model: this.config.model,
-              stream: false,
-              format: schema,
-              options: { temperature: 0 },
+              stream: ollamaInference.stream,
+              format: ollamaInference.format,
+              options: ollamaInference.options,
               messages: [
                 { role: 'system', content: classificationInstructions },
                 { role: 'user', content: description },
