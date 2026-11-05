@@ -2,7 +2,7 @@
 
 Proyecto educativo backend para explorar aplicaciones que integran LLM mediante iteraciones pequeñas y especificaciones aprobadas antes de implementar.
 
-La iteración 001 implementa `POST /api/v1/incidents/classify`: recibe una descripción y devuelve `BUG`, `FEATURE` o `QUESTION`. Usa Fastify, TypeScript estricto y Ollama local, con clasificación síncrona y proveedor desacoplado. La aceptación humana está pendiente; véase el estado de la [iteración](specs/iterations/001-classification.md).
+La iteración 001 implementa `POST /api/v1/incidents/classify`: recibe una descripción y devuelve `BUG`, `FEATURE` o `QUESTION`. Usa Fastify, TypeScript estricto y Ollama local, con clasificación síncrona y proveedor desacoplado. La iteración está `Verified` desde el **2026-11-04**, tras revisión y aceptación humana de la implementación, la legibilidad y el funcionamiento real con Ollama; véase el registro de la [iteración](specs/iterations/001-classification.md).
 
 ## Instalar, compilar y probar
 
