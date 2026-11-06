@@ -102,13 +102,42 @@ El código de salida es 0 cuando se completa y guarda el informe, aunque haya pr
 
 `npm run verify` incluye las métricas con fixtures calculados manualmente y la composición con un proveedor HTTP local simulado; nunca llama al Ollama real. La identidad del modelo por nombre y la temperatura cero no garantizan resultados reproducibles. Un dataset sintético pequeño tampoco mide precisión sobre tráfico real ni garantiza resistencia a prompt injection.
 
+## Infraestructura experimental I003
+
+I003 conserva su cierre experimental negativo aprobado el **2026-11-06**: ningún candidato elegible o promovido y original de I001 en producción. Se completó AC-11 con una única evaluación independiente de la baseline, sin candidatos en validación. Consumo final **360/480**; las **120 restantes no están autorizadas**. Ambas autorizaciones del manifiesto están desactivadas.
+
+Estado final **`Verified`**, fecha **2026-11-06**, tras completar AC-11 y superar la verificación final (65/65 tests, formato, lint y compilación), conforme a la aceptación humana condicionada. La [especificación](specs/iterations/003-prompt-robustness.md#21-autorización-excepcional-para-completar-ac-11--2026-11-06) registra la referencia independiente y el estado individual de los 14 criterios, sin cambiar umbrales ni criterios.
+
+Los [cuatro candidatos](evals/experiments/i003-candidates.md) y el [manifiesto](evals/experiments/i003-manifest.json) conservan textos, hashes, hipótesis, riesgos y protocolo. Validación aprobada/congelada se evaluó solo con original: 40/60 aciertos, macro-F1 64,44 %. H1/H2/H3 preceden a su preparación; H4 se diseñó tras desarrollo sin consultar validación. El aislamiento es procedimental. Informes locales: `evals/reports/i003-final-report.md` e `i003-baseline-validation.md`; están excluidos de Git y podrían perderse. La propuesta privada y el inventario con hashes permiten conservar entradas/configuración/código y recalcular métricas sin nuevas inferencias.
+
+El flujo experimental añade `--prompt` y `--phase` al comando existente. Estos ejemplos documentan la sintaxis **para después de las autorizaciones correspondientes**, no indican que deban ejecutarse ahora:
+
+```sh
+npm run build
+npm run eval:classification -- --prompt i001-original --phase development
+npm run eval:classification -- --prompt h1 --phase development
+npm run eval:compare -- evals/reports/BASELINE.json evals/reports/CANDIDATE.json
+```
+
+La comparación puede recibir como tercer argumento un archivo JSON de revisión humana con `reviewer`, `reviewedIds`, `rejected` y `reason`. Debe revisar individualmente todas las regresiones legítimas, incluidas las operativas; un veto necesita justificación. Usar IDs y motivos sin copiar descripciones completas. El resultado distingue elegibilidad numérica, revisión pendiente y veto; nunca promueve un prompt. La pérdida neta de aciertos no sustituye las listas de correcciones, regresiones semánticas y regresiones operativas.
+
+El comando sin opciones conserva I002 y sus informes de versión 1. No es un brazo I003 ni sustituye sus controles frescos. Los informes experimentales tienen versión 2 y registran ID, versión y hash del texto realmente enviado, fase, reserva presupuestaria y huellas del manifiesto/protocolo. Los informes históricos siguen siendo válidos, pero sin contexto I003 no se emparejan como controles experimentales.
+
+El manifiesto mantiene `development: false`, `validation: false` y selección `null` tras el cierre. Las autorizaciones históricas (240 inferencias iniciales, 60 de H4 y 60 de baseline independiente) constan en la especificación; no permiten nuevas ejecuciones. El permiso limitado `validation: "baseline-only"` se usó solo para completar AC-11 y ahora está desactivado; bloquea candidatos incluso con selección aprobada. Los controles siguen comprobando aprobación, hashes, configuración y presupuesto antes de inferir.
+
+`evals/reports/i003-budget.json` registra reservas y ejecuciones sin sobrescribir el historial. Un bloqueo exclusivo impide ejecuciones simultáneas y el presupuesto limita a cinco candidatos distintos, ocho runs y 480 inferencias previstas. Cada reserva consume conservadoramente 60 inferencias de presupuesto antes de llamar al proveedor. Si el proceso falla entre reserva y finalización, la reserva pendiente bloquea nuevos intentos hasta revisión humana; no se borra para repetir casos ni existe reanudación automática. El fichero y los informes siguen ignorados por Git.
+
+La comparación verifica IDs, dataset, fase, protocolo, modelo y configuración. Presenta contadores absolutos, métricas por dificultad/categoría, bloque legítimo, ataques inducidos y transiciones pareadas. Un error técnico no cuenta como resistencia. La latencia se muestra descriptivamente y no participa en puertas o desempates. Los umbrales de nueve ataques son criterios prácticos formativos, sin garantías estadísticas.
+
+`npm run verify` prueba el flujo con mocks y directorios temporales, sin Ollama real. Los casos de ranking usan resultados ficticios y no constituyen selección de un ganador del experimento.
+
 ## Documentación y proceso
 
 - [Producto](specs/product.md): visión, alcance y reglas generales.
 - [Arquitectura](specs/architecture.md): componentes, dependencias y restricciones.
 - [Iteración 001](specs/iterations/001-classification.md): requisitos, aceptación, tareas y trazabilidad.
 - [Iteración 002](specs/iterations/002-classification-evals.md): evaluación semántica y baseline experimental verificada.
-- [Iteración 003](specs/iterations/003-prompt-robustness.md): propuesta `Draft` de experimentación de robustez; sin autorización de implementación.
+- [Iteración 003](specs/iterations/003-prompt-robustness.md): experimento de robustez `Verified` el 2026-11-06, cerrado con resultado negativo y baseline original conservada.
 - [ADR-001](specs/adr/ADR-001-sync-classification.md): clasificación síncrona.
 - [ADR-002](specs/adr/ADR-002-provider-abstraction.md): separación del proveedor.
 - [AGENTS.md](AGENTS.md): reglas permanentes para agentes.

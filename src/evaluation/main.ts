@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig, type Config } from '../config.js';
@@ -7,21 +6,8 @@ import { OllamaClassifier } from '../infrastructure/ollama/ollama-classifier.js'
 import { loadDataset } from './dataset.js';
 import { runEvaluation } from './run-evaluation.js';
 import { buildReport, writeReport } from './report.js';
-
-function findCodeReference(rootDirectory: string): string | null {
-  try {
-    const commit = execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: rootDirectory,
-      encoding: 'utf8',
-      timeout: 1000,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }).trim();
-
-    return /^[a-f0-9]{40,64}$/.test(commit) ? `git:${commit}` : null;
-  } catch {
-    return null;
-  }
-}
+import { findCodeReference } from './code-reference.js';
+import { executeExperiment, parseExperimentArguments } from './experiment.js';
 
 export async function executeEvaluation(
   rootDirectory: string,
@@ -58,7 +44,23 @@ export async function executeEvaluation(
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const result = await executeEvaluation(process.cwd());
+  let result: { exitCode: number; output: string };
+
+  try {
+    const args = process.argv.slice(2);
+
+    if (args.length === 0) {
+      result = await executeEvaluation(process.cwd());
+    } else {
+      const selection = parseExperimentArguments(args);
+      result = await executeExperiment(process.cwd(), selection.phase, selection.promptId);
+    }
+  } catch {
+    result = {
+      exitCode: 1,
+      output: 'Opciones de evaluación inválidas; no se ha iniciado ninguna inferencia.',
+    };
+  }
   const print = result.exitCode === 0 ? console.log : console.error;
   print(result.output);
   process.exitCode = result.exitCode;

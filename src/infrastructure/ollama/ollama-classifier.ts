@@ -89,7 +89,10 @@ function parseJson(text: string): unknown {
 }
 
 export class OllamaClassifier implements IncidentClassifier {
-  constructor(private readonly config: Config) {}
+  constructor(
+    private readonly config: Config,
+    private readonly systemInstructions: string = classificationInstructions,
+  ) {}
 
   async classify(description: string): Promise<Classification> {
     const controller = new AbortController();
@@ -110,7 +113,7 @@ export class OllamaClassifier implements IncidentClassifier {
               format: ollamaInference.format,
               options: ollamaInference.options,
               messages: [
-                { role: 'system', content: classificationInstructions },
+                { role: 'system', content: this.systemInstructions },
                 { role: 'user', content: description },
               ],
             }),

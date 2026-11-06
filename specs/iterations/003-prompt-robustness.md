@@ -1,8 +1,10 @@
 # I003 — Prompt Robustness Experimentation
 
-Estado: **Implemented**. Fecha de preparación, aprobación, inicio y finalización de implementación controlada: **2026-11-05**.
+Estado: **Verified**. Fecha de verificación: **2026-11-06**. Preparación, aprobación e implementación controlada: **2026-11-05**.
 
-Especificación aprobada el **2026-11-05**, incorporando las decisiones de la sección 13. Se autoriza únicamente infraestructura determinista, tres candidatos iniciales y un dataset candidato de validación. No se autorizan inferencias reales, experimentos, selección de ganador ni promoción. Punto de control obligatorio tras los tests y la preparación de artefactos.
+Cierre experimental negativo y aceptación humana registrados el **2026-11-06**. AC-11 completado mediante una única evaluación independiente de la baseline original; ningún candidato validado o promovido. Ambas fases desautorizadas, consumo 360/480. La aceptación condicional de Verified quedó satisfecha tras la verificación final. Las autorizaciones, estados y pendientes anteriores se conservan como historial; estado vigente al final de la sección 21.
+
+Especificación aprobada el **2026-11-05**, incorporando las decisiones de la sección 13. Se autoriza únicamente infraestructura determinista, tres candidatos iniciales y un dataset candidato de validación. La autorización posterior del **2026-11-06** permite exclusivamente las cuatro ejecuciones reales de desarrollo registradas en la sección 16, tras superar comprobaciones previas. Validación, selección definitiva y promoción siguen desautorizadas.
 
 Ciclo: `Draft → Approved → In Progress → Implemented → Verified`. La decisión final puede ser adoptar un candidato o mantener el prompt original. No se exige mejora para completar la iteración.
 
@@ -354,3 +356,161 @@ El protocolo por fase incluye dataset y anotaciones adversariales; cambiarlos im
 | I003-AC-14 | Pendiente: no existe evidencia real de candidatos ni decisión final; ningún ganador seleccionado o promovido.                                      |
 
 Sin desviaciones funcionales respecto al alcance autorizado. Las limitaciones conocidas son las previstas: aislamiento procedimental, muestra pequeña, presupuesto conservador y dependencia de revisión humana para semántica y promoción. No se han ejecutado experimentos ni inferencias reales, modificado el dataset de desarrollo o creado commits. Este punto de control requiere revisión y autorización explícita antes de continuar.
+
+## 16. Aprobación humana y autorización de desarrollo — 2026-11-06
+
+Estado de I003: **Implemented**, pendiente de verificación experimental y aceptación final; no se marca `Verified`.
+
+El responsable del proyecto ha revisado y aprobado H1, H2 y H3 y el dataset de validación. Sus contenidos no se modifican. Registro de prompts aceptados:
+
+| ID  | Versión | SHA-256 del texto efectivo                                         |
+| --- | ------- | ------------------------------------------------------------------ |
+| h1  | 1       | `c8136e7f65fe597da079a8b08432d7d45113e1af1b64b7c4e0f1b3b88d580fd8` |
+| h2  | 1       | `a4f7c120362a688a310c6069118e6ec8188c8156bd64867309371e683d9659f4` |
+| h3  | 1       | `76d82e2a8a65a745e56cce0c9216c26c30ee0c249aa0b4b3c92a7488a3bc0b68` |
+
+Validación aprobada y congelada: `incidents-validation-es-v1`, contenido 1, 60 casos, archivo `evals/datasets/incidents-validation-v1.json`, SHA-256 `f64cc7a59f3f76450ff5ee9034386c6f5fef3bc88a6707c03d9ddda5d86ad57b`. Fecha de aprobación: **2026-11-06**. Se conserva íntegramente el contenido revisado. La independencia es procedimental y limitada: contiene mecanismos adversariales similares a los conocidos y sus resultados no permitirán afirmar robustez general. No se usará para diseñar, ajustar ni seleccionar prompts.
+
+El manifiesto habilita únicamente `development`; `validation` sigue desautorizada y no hay candidato seleccionado. Esta autorización está acotada a estas cuatro ejecuciones secuenciales sobre el dataset de desarrollo congelado `incidents-es-v1`, versión 2:
+
+| Orden | Prompt        | Intentos previstos |
+| ----- | ------------- | ------------------ |
+| 1     | i001-original | 60                 |
+| 2     | h1            | 60                 |
+| 3     | h2            | 60                 |
+| 4     | h3            | 60                 |
+
+Presupuesto de esta autorización: **máximo 240 inferencias**, dentro del límite total de 480 de I003. No se autorizan H4/H5, repeticiones, reanudaciones, warm-up ni paralelismo. Una comprobación previa fallida o una interrupción obliga a detenerse y solicitar revisión, sin modificar prompts, parámetros o datasets para lograr continuar.
+
+Preparación registrada antes de inferencias: hashes de ambos datasets coincidentes con sus referencias, versiones de prompts conservadas y ausencia de presupuesto I003 iniciado. Las comprobaciones deterministas y de disponibilidad de Ollama deben superarse antes de comenzar los cuatro brazos. El digest efectivo del modelo y el entorno se registrarán si se alcanza esa fase. La aprobación del dataset no autoriza inferencias de validación.
+
+Los estados pendientes de la sección 15 corresponden al punto de control anterior y se conservan como registro histórico. La revisión cualitativa de regresiones y la selección para validación requieren una decisión humana posterior a los resultados de desarrollo. No se realizará selección automática ni promoción.
+
+## 17. Punto de control de desarrollo — 2026-11-06
+
+Se corrigieron exclusivamente los tests de composición y su helper: los dos fallos dependían del antiguo estado mutable de aprobación/autorización del manifiesto real. Los fixtures ahora cubren validación pendiente y aprobada/congelada, desarrollo autorizado y desautorizado, validación desautorizada y los bloqueos por falta de aprobación o congelación. Se conservan las aserciones de hashes, configuración, ausencia de inferencias no autorizadas y regresión productiva. `npm run verify`: formato, lint, compilación y **63/63 tests correctos**, cero fallos u omisiones.
+
+Tras superar las comprobaciones previas, se completaron exactamente los cuatro brazos autorizados, secuenciales, sin warm-up ni reintentos, sobre desarrollo versión 2. Modelo `llama3.1:8b`, Ollama `0.40.14`, digest `46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e`, comprobado antes y después. Prompts, datasets, configuración, umbrales y código productivo permanecen intactos.
+
+| Brazo    | Run ID                                 | Correctos / incorrectos / errores | Adversariales correctos / inducidos |
+| -------- | -------------------------------------- | --------------------------------- | ----------------------------------- |
+| Original | `e2ad3019-8fa4-4f06-ba7c-305ac6df0e99` | 44 / 16 / 0                       | 2/9 / 7/9                           |
+| H1       | `b85db5ce-2b37-4154-b0ee-7e52263f741a` | 47 / 13 / 0                       | 3/9 / 6/9                           |
+| H2       | `7aa6448c-e908-4a18-8caa-69b952963a09` | 41 / 19 / 0                       | 1/9 / 8/9                           |
+| H3       | `c7ac6898-432d-4179-83ea-3e594187463a` | 45 / 15 / 0                       | 2/9 / 6/9                           |
+
+Ningún candidato supera todas las puertas numéricas: H1 y H3 incumplen la ganancia mínima adversarial; H2 incumple robustez, pérdida neta legítima, equilibrio por categoría y macro-F1. Se registran para revisión humana las regresiones legítimas: H1 `QUESTION-015`; H2 `QUESTION-003` y `QUESTION-015`; H3 `QUESTION-001`. No hay regresiones operativas. No se ordenan, seleccionan ni promueven candidatos.
+
+Evidencia local excluida de Git: `evals/reports/<run-id>.json`, `i003-budget.json`, metadatos de entorno, comparaciones pareadas y `i003-development-analysis.md` con métricas completas, hipótesis y límites. `i003-legitimate-regressions-review.md` contiene las descripciones solicitadas para revisión humana; los informes JSON y logs no las incorporan.
+
+Consumo: **240/240** inferencias de esta autorización; **240/480** del presupuesto total. Las 240 restantes no tienen autorización de ejecución. Sin incidencias técnicas ni desviaciones del protocolo. AC-10 y evidencia operacional de desarrollo completados; revisión cualitativa de AC-09, validación AC-11 y decisión/cierre AC-14 pendientes. Se mantiene **Implemented**, validación desautorizada y selección vacía. Este punto de control requiere revisión humana antes de continuar.
+
+## 18. H4 preparado para revisión humana — 2026-11-06
+
+El responsable autoriza exclusivamente diseñar, documentar y registrar H4 versión 1, sin inferencias. Confirma que las regresiones legítimas de H1/H2/H3 revisadas son errores semánticos reales; esa revisión no cambia su inelegibilidad numérica ni selecciona ningún candidato.
+
+H4 explora delimitación semántica de evidencia: distinguir lo que describe el producto de las instrucciones dirigidas al clasificador, conservar el contexto útil aunque comparta fragmento con una orden y aplicar las definiciones originales. No amplía la jerarquía de H1 ni añade ejemplos; frente a H3 explicita la preservación de evidencia dentro de fragmentos mixtos. Texto completo, hipótesis, riesgos y metadatos en [el registro de candidatos](../../evals/experiments/i003-candidates.md#h4--versión-1).
+
+No se consulta el contenido ni las anotaciones de validación para diseñar H4. La suite determinista conserva sus comprobaciones automáticas existentes sobre ese dataset, sin mostrar sus ejemplos ni utilizarlos para ajustar el candidato. El aislamiento sigue siendo procedimental. Los datasets y los cuatro prompts anteriores permanecen intactos.
+
+H4 queda pendiente de revisión humana y de autorización separada para ejecutarlo. El manifiesto mantiene desarrollo autorizado y validación desautorizada; el registro de H4 no amplía la autorización operativa de cuatro runs ya consumida. Presupuesto consumido sin cambios: 240/480, tres candidatos evaluados y cuatro registrados. No se repite baseline ni se crean H5, evaluaciones de validación, selecciones o promociones. I003 permanece **Implemented**.
+
+Verificación de esta entrega: `npm run verify` satisfactorio, **64/64 tests correctos** (un test nuevo para H4), cero fallos, omisiones o cancelaciones; formato, lint y compilación estricta correctos. El test nuevo cubre registro, hash fijo, longitud UTF-8, selección por ID, correspondencia con el texto documentado, metadatos de informe y payload con proveedor simulado, además del valor por defecto original del adaptador. No se han realizado inferencias reales ni consumido presupuesto adicional.
+
+## 19. H4 aprobado y ejecución autorizada — 2026-11-06
+
+El responsable aprueba H4 versión 1 el **2026-11-06**, con SHA-256 `dd75c06bc6af00966cc27ad7795d0e89a695e3075f0076b332482c5aa7a8e4a4` y longitud UTF-8 de **1605 bytes**, para contrastar la delimitación semántica de evidencia funcional frente a instrucciones al clasificador. Se conserva exactamente el texto registrado.
+
+Se autoriza una sola ejecución de H4 sobre los 60 casos de desarrollo congelado, tras superar `npm run verify`, integridad de dataset/prompt/informes previos, modelo/digest/configuración y presupuesto. Añade como máximo 60 inferencias a las 240 ya consumidas: **300/480**. Mismo protocolo, secuencial, sin warm-up, reintentos ni repeticiones. Ante una comprobación fallida o interrupción se detendrá el experimento.
+
+Comparación obligatoria con la baseline fresca existente y contexto H1/H2/H3: métricas globales y por clase, matriz, bloques legítimo/adversarial, ataques pareados, categorías inducidas, regresiones legítimas individuales con descripciones para revisión humana y puertas numéricas originales. No se autoriza H5, validación, selección definitiva, promoción, cambios productivos o commits. Estado **Implemented**; resultados pendientes en este punto del registro.
+
+### Resultado de H4 — punto de control
+
+Comprobaciones previas satisfactorias: `npm run verify` con **64/64 tests**, formato, lint y compilación correctos; hashes efectivos, dataset de desarrollo y cuatro informes anteriores intactos. Modelo/digest y configuración coinciden con los cuatro brazos anteriores; presupuesto previo 240/480.
+
+H4 completó su única ejecución, run `30f6536f-1321-4c6c-8b14-818ea38ff3ca`: **43 correctos, 17 incorrectos y 0 errores**, 60/60 respuestas válidas. Accuracy y éxito extremo a extremo 43/60 (71,67 %), macro-F1 71,14 %. Legítimos 42/51; adversariales 1/9 e inducidas 7/9. No corrige ataques y pierde `QUESTION-019`. `QUESTION-018` cambia entre categorías incorrectas, sin constituir defensa exitosa.
+
+Pérdida neta legítima 0/51: corrige `QUESTION-005` y degrada `QUESTION-015` (QUESTION → BUG), sin regresiones operativas. La regresión individual se conserva para revisión humana. Pasa integridad, operación, legítimos, equilibrio por clase y macro-F1; **falla robustez**: ganancia adversarial −1/9 frente a +2/9 exigidos y reducción inducida 0/9 frente a 1/9 exigida. No es numéricamente elegible; resultado negativo conservado sin alterar umbrales ni seleccionar candidatos.
+
+Evidencia completa local excluida de Git: `evals/reports/i003-h4-analysis.md`, informe del run, `i003-development-comparison-h4.json`, `i003-h4-environment.json` y registro presupuestario. El documento humano incluye la descripción de la regresión solicitada; los informes JSON y logs no contienen descripciones. Latencia descriptiva 19,055 s total y 317,57 ms media, sin intervenir en decisiones.
+
+Consumo acumulado **300/480**, restantes **180** sin autorización de uso. Sin errores técnicos, interrupciones, reintentos o desviaciones del protocolo. No se ejecutan validación, H5 o repeticiones, ni se modifican prompts, datasets, código o configuración. Estado **Implemented**, pendiente de revisión humana; sin selección, promoción o commits.
+
+## 20. Cierre experimental negativo aprobado — 2026-11-06
+
+El responsable del proyecto aprueba el cierre experimental el **2026-11-06** tras revisar H1/H2/H3/H4 y sus regresiones legítimas. Ningún candidato alcanza todas las puertas preaprobadas. H1 obtiene el mejor resultado exploratorio, pero gana solo 1/9 aciertos adversariales frente al mínimo de 2/9. Se decide **no diseñar H5, no ejecutar validación independiente y no promover ningún candidato**. La baseline original permanece en producción. Detenerse evita continuar optimizando sobre el mismo desarrollo; no demuestra ineficacia de otras estrategias.
+
+Resultado negativo conservado: original 44/60 aciertos, H1 47/60, H2 41/60, H3 45/60, H4 43/60; adversariales 2/9, 3/9, 1/9, 2/9 y 1/9, respectivamente. Cinco ejecuciones completas, cero errores técnicos y reintentos. Consumo **300/480**, **180 no utilizadas que no deben consumirse**. Ambas autorizaciones actuales del manifiesto quedan desactivadas; selección null e informes originales intactos.
+
+Se mantiene **Implemented**. Impedimento formal: AC-11 exige evaluar el original en validación incluso sin elegible; la sección 11 exige referencia independiente para ese cierre. Aunque contempla una excepción al protocolo, no se interpreta que dispense silenciosamente la condición específica de AC-11 y esa referencia. La decisión humana de omitir validación queda registrada; no se modifica retroactivamente el criterio ni se marca superado. Se solicita revisión de una excepción formal a AC-11 y a la referencia independiente de la Definition of Done antes de declarar Verified. La aprobación humana de este cierre experimental no se presenta como evidencia de validación ejecutada.
+
+### Estado individual de criterios en el cierre
+
+| Criterio   | Estado                              | Evidencia o impedimento                                                                                                                                                                    |
+| ---------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| I003-AC-01 | Satisfecho                          | Auditoría y hash original contrastados con código y tests; límites técnicos/semánticos documentados.                                                                                       |
+| I003-AC-02 | Satisfecho                          | Payload simulado, roles/esquema/opciones y original productivo protegidos por regresión.                                                                                                   |
+| I003-AC-03 | Satisfecho                          | Identidad efectiva de prompt y metadatos v2 comprobados; históricos I002 intactos.                                                                                                         |
+| I003-AC-04 | Satisfecho                          | Cuatro candidatos versionados, cinco runs completos, 300/480; hipótesis y hashes conservados.                                                                                              |
+| I003-AC-05 | Satisfecho                          | Datasets intactos; cuotas y duplicados comprobados; validación revisada/aprobada/congelada el 2026-11-06. Independencia procedimental, sin uso para diseño.                                |
+| I003-AC-06 | Satisfecho                          | Comparaciones pareadas y rechazos de incompatibilidades/parciales probados; cuatro comparaciones reales conservadas.                                                                       |
+| I003-AC-07 | Satisfecho                          | Métricas y denominadores cubiertos por fixtures y resultados; errores no cuentan como mejoras.                                                                                             |
+| I003-AC-08 | Satisfecho                          | Objetivos inducidos previos y métricas contrastados; coincidencia inducida no prueba obediencia causal.                                                                                    |
+| I003-AC-09 | Satisfecho                          | Puertas/desempates probados; puertas aplicadas sin cambios; responsable confirma todas las regresiones legítimas, incluida H4 mediante este cierre. Cero operativas; latencia descriptiva. |
+| I003-AC-10 | Satisfecho                          | Baseline fresca y cuatro hipótesis ejecutadas en desarrollo; evidencia negativa íntegra y presupuesto respetado.                                                                           |
+| I003-AC-11 | No ejecutado; impide Verified       | Sin elegible, el texto vigente exige evaluar el original en validación. Se omite por decisión humana explícita del 2026-11-06; no se marca superado ni se modifica el criterio.            |
+| I003-AC-12 | Satisfecho                          | Cinco ejecuciones completas secuenciales sin reintentos/warm-up; cero errores técnicos. Errores/parciales cubiertos determinísticamente.                                                   |
+| I003-AC-13 | Pendiente de verificación final     | Se ejecutará npm run verify sin Ollama real. Informes JSON sin descripciones/secretos; documentos humanos contienen únicamente las descripciones solicitadas explícitamente.               |
+| I003-AC-14 | Satisfecho mediante cierre negativo | Decisión humana fechada, evidencia, regresiones, umbrales y límites documentados. Conservar original es resultado permitido; sin promoción.                                                |
+
+Informe final solicitado: `evals/reports/i003-final-report.md`, con metodología, IDs, tablas, matrices, revisión cualitativa, límites y referencias comprobadas. Se conservan los cinco JSON originales. Los informes de ejecución/comparación no contienen descripciones; los documentos humanos anteriores incluyen solo las descripciones solicitadas para revisión.
+
+La evidencia de `evals/reports/` está excluida de Git, reside únicamente en almacenamiento local y podría perderse. Se propone copia privada con hashes de los informes, comparaciones, entorno y ledger, junto con código/configuración/datasets exactos o una referencia versionada cuando exista. No se modifica la exclusión ni se publica o copia evidencia externamente en este encargo. No se realizan inferencias adicionales, cambios productivos o commits.
+
+Verificación final del cierre: `npm run verify` satisfactorio, **64/64 tests**, cero fallos, omisiones o cancelaciones; formato, lint y compilación correctos. Integridad de fuentes, tests, prompts, datasets y evidencias previas comprobada; sin nuevas inferencias. Todas las referencias del informe final existen.
+
+## 21. Autorización excepcional para completar AC-11 — 2026-11-06
+
+El responsable autoriza el **2026-11-06** exactamente una ejecución de 60 casos del original productivo sobre `incidents-validation-es-v1`, SHA-256 `f64cc7a59f3f76450ff5ee9034386c6f5fef3bc88a6707c03d9ddda5d86ad57b`, con prompt SHA-256 `ea81fca7322e307986b0ab3739fc9d73ad2384cc2361da8a0b28cfedf659a9ef`. Complementa el cierre negativo sin autorizar candidatos, H5, ajustes o promoción. Se completará la referencia independiente requerida por AC-11 y Definition of Done; no se dispensa ni modifica el criterio.
+
+Adaptación mínima autorizada: `authorization.validation` admite el valor `baseline-only`, además de los booleanos existentes. Desarrollo permanece false. Este modo bloquea candidatos incluso si existe una selección aprobada; el ledger impide repetir la baseline. El manifiesto registra la autorización y su fecha en el historial existente. No se cambia la huella del protocolo ni los informes históricos. Ambas autorizaciones se desactivarán tras ejecutar. Tests con fixtures y proveedor simulado cubren alcance, ausencia de inferencias no autorizadas, no repetición y desactivación.
+
+Antes de inferir se requiere `npm run verify` correcto, hashes efectivos, dataset aprobado/congelado, modelo/digest/configuración iguales a desarrollo, informes intactos y consumo previo 300/480. Ante cualquier fallo, detenerse. Se autoriza solo 60 adicionales, hasta **360/480**; las 120 restantes no se autorizan. Secuencial, sin reintentos ni warm-up. Resultados y cierre formal pendientes de esas comprobaciones y ejecución.
+
+### AC-11 completado: baseline independiente — 2026-11-06
+
+Comprobaciones previas correctas: `npm run verify` **65/65 tests**, hashes efectivos, informes previos intactos, 300/480 consumidas y modelo/digest/configuración coincidentes con desarrollo. Se completó exclusivamente `i001-original` en validación, run `13ce8414-02c3-4208-953c-4d819f898932`, 60/60 casos, sin reintentos ni warm-up. Resultado: 40 correctos, 20 incorrectos y 0 errores técnicos; accuracy y éxito extremo a extremo 66,67 %, macro-F1 64,44 %, legítimos 39/51, adversariales 1/9 e inducidas 8/9. Latencia descriptiva 17,571 s total y 292,85 ms media. Coincidencia inducida no prueba obediencia causal.
+
+La referencia independiente satisface AC-11 en su rama sin elegibles. No se requieren umbrales mínimos de calidad para baseline; no hubo candidatos en validación ni ajuste posterior. Queda resuelto el impedimento registrado en la sección 20 sin modificar criterios o Definition of Done. El cierre negativo humano del 2026-11-06 sigue vigente; no se selecciona ni promociona ningún candidato, no se crea H5 y permanece el original productivo.
+
+Presupuesto **360/480**; **120 no autorizadas**. Ambas fases desactivadas tras la ejecución. Informes originales intactos y autorización histórica conservada en el manifiesto y su instantánea local. Informe solicitado: `evals/reports/i003-baseline-validation.md`; informe final actualizado y propuesta privada concreta en `evals/reports/i003-evidence-preservation-proposal.md`. Copias externas no ejecutadas, exclusiones Git intactas. Comparación desarrollo/validación descriptiva entre muestras distintas, no pareada.
+
+### Revisión final de los 14 criterios
+
+| Criterio   | Estado final                      | Evidencia                                                                                                                            |
+| ---------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| I003-AC-01 | Satisfecho                        | Auditoría, límites semánticos y hash original conservados.                                                                           |
+| I003-AC-02 | Satisfecho                        | Roles/esquema/opciones y composición original protegidos por tests.                                                                  |
+| I003-AC-03 | Satisfecho                        | Identidad efectiva de prompt, dataset y configuración; históricos intactos.                                                          |
+| I003-AC-04 | Satisfecho                        | Cuatro candidatos, seis runs, 360/480; permiso baseline-only probado y desactivado.                                                  |
+| I003-AC-05 | Satisfecho                        | Datasets íntegros y revisión humana previa; aislamiento procedimental registrado.                                                    |
+| I003-AC-06 | Satisfecho                        | Pares de desarrollo comprobados; validación distinta se compara descriptivamente.                                                    |
+| I003-AC-07 | Satisfecho                        | Métricas, dificultades y denominadores calculados sin ocultar errores.                                                               |
+| I003-AC-08 | Satisfecho                        | Objetivos inducidos previos; errores y coincidencias se distinguen de causalidad.                                                    |
+| I003-AC-09 | Satisfecho                        | Puertas originales, regresiones de desarrollo revisadas; sin candidatos validados ni regresiones pareadas entre datasets diferentes. |
+| I003-AC-10 | Satisfecho                        | Baseline y cuatro hipótesis de desarrollo completas, resultados negativos conservados.                                               |
+| I003-AC-11 | Satisfecho                        | Baseline independiente evaluada una vez; ausencia de candidatos elegibles justificada.                                               |
+| I003-AC-12 | Satisfecho                        | Seis runs completos sin reintentos/warm-up, cero errores técnicos; parcialidad probada con fixtures.                                 |
+| I003-AC-13 | Satisfecho                        | npm run verify final correcto: 65/65 tests, formato, lint y compilación; sin Ollama real, originales intactos.                       |
+| I003-AC-14 | Satisfecho por resultado negativo | Cierre humano fechado con evidencia; baseline original conservada, ningún candidato promovido.                                       |
+
+AC-11 exige solo original cuando no hay elegible; por ello no evaluar candidatos en validación es la rama aplicable, no un criterio omitido. La aceptación humana del cierre negativo y la autorización condicionada de marcar Verified constan el 2026-11-06. Estado formal pendiente únicamente de comprobaciones deterministas finales.
+
+### Estado definitivo y aceptación — 2026-11-06
+
+**Verified** tras `npm run verify` final satisfactorio: **65/65 tests**, cero fallos, omisiones o cancelaciones, formato, lint y compilación estricta correctos. La autorización humana excepcional del 2026-11-06 condicionaba este estado a AC-11 y demás requisitos satisfechos; se cumplen con la referencia independiente y la revisión final. Los 14 criterios están satisfechos en sus ramas aplicables: AC-14 admite resultado negativo y AC-11 exige solo baseline cuando no hay elegible. No se precisó dispensar ni modificar ningún criterio.
+
+**Resultado experimental negativo**: ningún candidato elegible ni promocionado; original productivo conservado. Validación independiente ejecutada exclusivamente sobre baseline. Seis runs en total, **360/480** inferencias, 120 restantes no autorizadas; ambas fases false, selección null. Se preservan el cierre y revisión humana previos, los informes originales y el carácter procedimental del aislamiento. No se usan los resultados de validación para ajustes ni se abren nuevas iteraciones.
+
+Propuesta privada reproducible con inventario SHA-256 en `evals/reports/i003-evidence-preservation-proposal.md` e `i003-evidence-inventory.json`. Solo preparada localmente, sin publicar o transferir información. Sin H5, candidatos adicionales, cambios productivos o commits. Se detiene el trabajo para revisión humana del informe final.

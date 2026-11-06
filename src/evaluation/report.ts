@@ -8,6 +8,7 @@ import { classificationInstructions } from '../infrastructure/ollama/classificat
 import { ollamaInference } from '../infrastructure/ollama/inference-descriptor.js';
 import { sha256 } from './dataset.js';
 import { calculateMetrics } from './metrics.js';
+import type { RegisteredPrompt } from './prompts.js';
 import { difficulties, type EvaluationRun, type LoadedDataset } from './types.js';
 
 export function buildReport(
@@ -135,93 +136,93 @@ const metricsSchema = strictObject({
     Object.fromEntries(categories.map((category) => [category, categoryMetrics])),
   ),
 });
-const validate = new Ajv().compile<EvaluationReport>(
-  strictObject({
-    schemaVersion: { const: 1 },
-    runId: { type: 'string', pattern: '^[a-f0-9-]{36}$' },
-    complete: { type: 'boolean' },
-    termination: { enum: [null, 'unexpected_error'] },
-    dataset: strictObject({
-      id: text,
-      version: { type: 'integer', minimum: 1 },
-      sha256: hash,
-      path: text,
-      plannedCount: { const: 60 },
-      distribution: {
-        type: 'array',
-        minItems: 3,
-        maxItems: 3,
-        items: strictObject({
-          category: { enum: [...categories] },
-          count: { const: 20 },
-          difficulties: strictObject({
-            obvious: { const: 10 },
-            complex: { const: 7 },
-            adversarial: { const: 3 },
-          }),
-        }),
-      },
-    }),
-    model: strictObject({ provider: { const: 'ollama' }, name: text, digest: { type: 'null' } }),
-    prompt: strictObject({
-      sha256: hash,
-      module: { const: 'src/infrastructure/ollama/classification-instructions.ts' },
-    }),
-    configuration: strictObject({
-      timeoutMs: { type: 'integer', minimum: 1, maximum: 2147483647 },
-      providerOrigin: text,
-      endpoint: { const: ollamaInference.endpoint },
-      stream: { const: ollamaInference.stream },
-      options: { const: ollamaInference.options },
-      format: { const: ollamaInference.format },
-      normalization: { const: 'trim' },
-      execution: { const: 'sequential' },
-      retries: { const: 0 },
-    }),
-    codeReference: { anyOf: [text, { type: 'null' }] },
-    execution: strictObject({
-      startedAt: timestamp,
-      finishedAt: timestamp,
-      durationMs: duration,
-      nodeVersion: text,
-      platform: text,
-      plannedCount: { const: 60 },
-      attemptedCount: count,
-      validCount: count,
-      correctCount: count,
-      incorrectCount: count,
-      errorCount: count,
-      unattemptedCount: count,
-    }),
-    results: {
+const reportSchema = strictObject({
+  schemaVersion: { const: 1 },
+  runId: { type: 'string', pattern: '^[a-f0-9-]{36}$' },
+  complete: { type: 'boolean' },
+  termination: { enum: [null, 'unexpected_error'] },
+  dataset: strictObject({
+    id: text,
+    version: { type: 'integer', minimum: 1 },
+    sha256: hash,
+    path: text,
+    plannedCount: { const: 60 },
+    distribution: {
       type: 'array',
-      maxItems: 60,
-      items: {
-        oneOf: [
-          strictObject({
-            ...resultReference,
-            status: { enum: ['correct', 'incorrect'] },
-            predictedCategory: { enum: [...categories] },
-          }),
-          strictObject({
-            ...resultReference,
-            status: { const: 'error' },
-            errorKind: {
-              enum: [
-                'timeout',
-                'connection_error',
-                'http_error',
-                'invalid_response',
-                'unexpected_error',
-              ],
-            },
-          }),
-        ],
-      },
+      minItems: 3,
+      maxItems: 3,
+      items: strictObject({
+        category: { enum: [...categories] },
+        count: { const: 20 },
+        difficulties: strictObject({
+          obvious: { const: 10 },
+          complex: { const: 7 },
+          adversarial: { const: 3 },
+        }),
+      }),
     },
-    metrics: { anyOf: [metricsSchema, { type: 'null' }] },
   }),
-);
+  model: strictObject({ provider: { const: 'ollama' }, name: text, digest: { type: 'null' } }),
+  prompt: strictObject({
+    sha256: hash,
+    module: { const: 'src/infrastructure/ollama/classification-instructions.ts' },
+  }),
+  configuration: strictObject({
+    timeoutMs: { type: 'integer', minimum: 1, maximum: 2147483647 },
+    providerOrigin: text,
+    endpoint: { const: ollamaInference.endpoint },
+    stream: { const: ollamaInference.stream },
+    options: { const: ollamaInference.options },
+    format: { const: ollamaInference.format },
+    normalization: { const: 'trim' },
+    execution: { const: 'sequential' },
+    retries: { const: 0 },
+  }),
+  codeReference: { anyOf: [text, { type: 'null' }] },
+  execution: strictObject({
+    startedAt: timestamp,
+    finishedAt: timestamp,
+    durationMs: duration,
+    nodeVersion: text,
+    platform: text,
+    plannedCount: { const: 60 },
+    attemptedCount: count,
+    validCount: count,
+    correctCount: count,
+    incorrectCount: count,
+    errorCount: count,
+    unattemptedCount: count,
+  }),
+  results: {
+    type: 'array',
+    maxItems: 60,
+    items: {
+      oneOf: [
+        strictObject({
+          ...resultReference,
+          status: { enum: ['correct', 'incorrect'] },
+          predictedCategory: { enum: [...categories] },
+        }),
+        strictObject({
+          ...resultReference,
+          status: { const: 'error' },
+          errorKind: {
+            enum: [
+              'timeout',
+              'connection_error',
+              'http_error',
+              'invalid_response',
+              'unexpected_error',
+            ],
+          },
+        }),
+      ],
+    },
+  },
+  metrics: { anyOf: [metricsSchema, { type: 'null' }] },
+});
+
+const validate = new Ajv().compile<EvaluationReport>(reportSchema);
 
 export function validateReport(report: unknown): asserts report is EvaluationReport {
   if (!validate(report)) {
@@ -269,11 +270,98 @@ export function validateReport(report: unknown): asserts report is EvaluationRep
   }
 }
 
-export async function writeReport(directory: string, report: EvaluationReport): Promise<string> {
-  validateReport(report);
+export async function writeReport(
+  directory: string,
+  report: EvaluationReport | ExperimentReport,
+): Promise<string> {
+  validateAnyReport(report);
   await mkdir(directory, { recursive: true });
   const filePath = join(directory, `${report.runId}.json`);
   await writeFile(filePath, JSON.stringify(report, null, 2) + '\n', { flag: 'wx' });
 
   return filePath;
+}
+
+export interface ExperimentContext {
+  phase: 'development' | 'validation';
+  manifestSha256: string;
+  protocolSha256: string;
+  reservationId: string;
+}
+
+export function buildExperimentReport(
+  loaded: LoadedDataset,
+  config: Config,
+  run: EvaluationRun,
+  codeReference: string | null,
+  prompt: RegisteredPrompt,
+  context: ExperimentContext,
+) {
+  const base = buildReport(loaded, config, run, codeReference);
+
+  return {
+    ...base,
+    schemaVersion: 2 as const,
+    prompt: {
+      id: prompt.id,
+      version: prompt.version,
+      role: prompt.role,
+      sha256: sha256(prompt.text),
+      module: prompt.module,
+    },
+    experiment: { id: 'I003' as const, ...context },
+  };
+}
+
+export type ExperimentReport = ReturnType<typeof buildExperimentReport>;
+
+const validateExperiment = new Ajv().compile<ExperimentReport>({
+  ...reportSchema,
+  required: [...reportSchema.required, 'experiment'],
+  properties: {
+    ...reportSchema.properties,
+    schemaVersion: { const: 2 },
+    prompt: strictObject({
+      id: text,
+      version: { type: 'integer', minimum: 1 },
+      role: { enum: ['baseline', 'candidate'] },
+      sha256: hash,
+      module: text,
+    }),
+    experiment: strictObject({
+      id: { const: 'I003' },
+      phase: { enum: ['development', 'validation'] },
+      manifestSha256: hash,
+      protocolSha256: hash,
+      reservationId: text,
+    }),
+  },
+});
+
+export function validateAnyReport(
+  report: unknown,
+): asserts report is EvaluationReport | ExperimentReport {
+  if (
+    typeof report !== 'object' ||
+    report === null ||
+    !('schemaVersion' in report) ||
+    report.schemaVersion !== 2
+  ) {
+    validateReport(report);
+    return;
+  }
+
+  if (!validateExperiment(report)) {
+    throw new Error('Contrato de informe experimental inválido.');
+  }
+
+  const { experiment: _experiment, ...base } = report;
+  validateReport({
+    ...base,
+    schemaVersion: 1,
+    prompt: {
+      sha256: base.prompt.sha256,
+      module: 'src/infrastructure/ollama/classification-instructions.ts',
+    },
+  });
 }
