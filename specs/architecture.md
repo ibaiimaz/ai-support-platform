@@ -82,7 +82,19 @@ El evaluador depende del caso de uso y del puerto existentes, sin importar HTTP 
 
 `inference-descriptor.ts` expone los mismos valores que ya usaba el adaptador, ahora inmutables y compartidos con los metadatos. La extracción no altera mensajes, prompt ni comportamiento productivo. Hay regresión del payload, del hash del prompt de I001 y de sus casos de error.
 
-No se añaden dependencias. Los informes usan hashes del dataset y prompt, configuración efectiva y referencia opcional de Git; no hay hashes de módulos ni del lockfile. Se excluyen de Git y de formato automático. I002 está `Verified` desde el **2026-11-05**, tras aceptar el dataset v2 y la evaluación real identificada en su especificación. La baseline experimental conserva la vulnerabilidad de prompt injection; su cierre no modifica el clasificador. I003 se prepara como especificación `Draft`, sin cambios de arquitectura implementados.
+No se añaden dependencias. Los informes usan hashes del dataset y prompt, configuración efectiva y referencia opcional de Git; no hay hashes de módulos ni del lockfile. Se excluyen de Git y de formato automático. I002 está `Verified` desde el **2026-11-05**, tras aceptar el dataset v2 y la evaluación real identificada en su especificación. La baseline experimental conserva la vulnerabilidad de prompt injection; su cierre no modifica el clasificador. I003 incorpora infraestructura experimental aprobada, sin modificar la arquitectura hexagonal ni el contrato público; su punto de control aún no autoriza experimentos reales.
+
+## Experimentación de prompts I003
+
+La composición de evaluación puede pasar un texto de sistema registrado al adaptador Ollama. El segundo argumento es opcional y su valor por defecto sigue siendo el prompt original; `src/main.ts` no cambia. El caso de uso y el puerto continúan independientes de prompts y del proveedor.
+
+Los módulos H1/H2/H3 y sus metadatos están en el registro de `src/evaluation/prompts.ts`. El manifiesto JSON relaciona candidatos, datasets, objetivos inducidos, configuración y puertas, sin introducir un framework. Los informes v2 se construyen desde la misma definición de prompt enviada al adaptador. Se conserva lectura/validación de v1; la comparación experimental exige contexto v2 completo y compatible.
+
+Los módulos `analysis.ts`, `comparison.ts` y `decisions.ts` reutilizan las métricas de I002 para desgloses, pares, puertas y desempates. No usan la latencia para decidir ni seleccionan/promueven automáticamente en producción. La revisión humana individual puede vetar cualquier candidato, aunque supere las puertas numéricas.
+
+`experiment.ts`, `experiment-manifest.ts` y `experiment-budget.ts` componen ejecución, autorizaciones, referencia congelada y reservas locales de presupuesto. El protocolo de cada fase incluye la referencia y anotaciones adversariales para impedir cambiar su interpretación después de observar resultados. Una reserva incompleta no se reintenta automáticamente. `code-reference.ts` comparte la referencia Git opcional con I002.
+
+El dataset de validación es candidato, no aprobado ni congelado. Codex preparó los prompts antes del dataset; el aislamiento es procedimental y no implica independencia técnica. Las fases reales siguen desautorizadas y la selección está vacía. Ningún prompt se ha promovido. Los detalles y la trazabilidad permanecen en [I003](iterations/003-prompt-robustness.md).
 
 ## Restricciones operativas
 
