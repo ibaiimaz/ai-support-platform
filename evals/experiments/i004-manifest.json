@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "I004",
+  "protocol": {
+    "providerOrigin": "http://localhost:11434",
+    "timeoutMs": 45000,
+    "maxInferences": 126,
+    "memoryIntervalMs": 500,
+    "order": ["llama3.1:8b", "gemma3:12b"],
+    "inference": {
+      "endpoint": "/api/chat",
+      "stream": false,
+      "options": {
+        "temperature": 0
+      },
+      "format": {
+        "type": "object",
+        "required": ["category"],
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": ["BUG", "FEATURE", "QUESTION"]
+          }
+        }
+      }
+    }
+  },
+  "promptSha256": "ea81fca7322e307986b0ab3739fc9d73ad2384cc2361da8a0b28cfedf659a9ef",
+  "benchmark": {
+    "path": "evals/datasets/incidents-v1.json",
+    "id": "incidents-es-v1",
+    "version": 2,
+    "sha256": "e17fcb2ea94126809319133a9ba78fa1108e7efe21ed62f45c88167bebe72c90"
+  },
+  "compatibility": {
+    "path": "evals/experiments/i004-compatibility-cases.json",
+    "id": "i004-compatibility-es-v1",
+    "version": 1,
+    "sha256": "412415cf332c491be42522f1b152d996cba03d66c7f86d61af7f3c9738be4809",
+    "review": {
+      "approved": true,
+      "approvedBy": "Responsable del proyecto",
+      "date": "2026-11-06"
+    }
+  },
+  "targets": {
+    "BUG-018": "FEATURE",
+    "BUG-019": "QUESTION",
+    "BUG-020": "FEATURE",
+    "FEATURE-018": "BUG",
+    "FEATURE-019": "QUESTION",
+    "FEATURE-020": "BUG",
+    "QUESTION-018": "BUG",
+    "QUESTION-019": "FEATURE",
+    "QUESTION-020": "BUG"
+  },
+  "models": {
+    "llama3.1:8b": {
+      "digest": "46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e",
+      "templateSha256": "948af2743fc78a328dcb3b0f5a31b3d75f415840fdb699e8b1235978392ecf85",
+      "parametersSha256": "2801e61a8848e505a6e20beeaea63cca1600200f6720e5f916ba7d6da5c3ba39",
+      "parameters": "stop                           \"<|start_header_id|>\"\nstop                           \"<|end_header_id|>\"\nstop                           \"<|eot_id|>\"",
+      "quantization": "Q4_K_M",
+      "modelContextLength": 131072,
+      "storedBytes": 4920753328
+    },
+    "gemma3:12b": {
+      "digest": "b92b218582c521ba287f38f1d6057dcd3c6cbff036f13cac97b5d861f5e58ec3",
+      "templateSha256": "e0a42594d802e5d31cdc786deb4823edb8adff66094d49de8fffe976d753e348",
+      "parametersSha256": "82be0d39faf8dbd5f010de5f8619825954ef45533a1df7db4973110e71cef2d6",
+      "parameters": "stop                           \"<end_of_turn>\"\ntemperature                    1\ntop_k                          64\ntop_p                          0.95",
+      "quantization": "Q4_K_M",
+      "modelContextLength": 131072,
+      "storedBytes": 8164039732
+    }
+  },
+  "environment": {
+    "ollamaVersion": "0.40.14",
+    "hostSha256": "94f0768b82abba7ffbe81d8272135fac2699ab9d31b65b8807abf64c14714efa",
+    "serverPid": 6581,
+    "dedicated": true,
+    "memoryUnavailable": {
+      "approved": false,
+      "approvedBy": null,
+      "date": null
+    }
+  },
+  "authorization": {
+    "compatibility": {
+      "llama3.1:8b": {
+        "approved": false,
+        "approvedBy": "Responsable del proyecto; autorización limitada a tres intentos por modelo",
+        "date": "2026-11-06"
+      },
+      "gemma3:12b": {
+        "approved": false,
+        "approvedBy": "Responsable del proyecto; autorización limitada a tres intentos por modelo",
+        "date": "2026-11-06"
+      }
+    },
+    "benchmark": {
+      "llama3.1:8b": {
+        "approved": false,
+        "approvedBy": "Responsable del proyecto; benchmark autorizado de 60 intentos por modelo, máximo adicional 120",
+        "date": "2026-11-06"
+      },
+      "gemma3:12b": {
+        "approved": false,
+        "approvedBy": "Responsable del proyecto; benchmark autorizado de 60 intentos por modelo, máximo adicional 120",
+        "date": "2026-11-06"
+      }
+    }
+  }
+}

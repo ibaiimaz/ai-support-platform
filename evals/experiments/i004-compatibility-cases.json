@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "i004-compatibility-es-v1",
+  "version": 1,
+  "examples": [
+    {
+      "id": "I004-COMP-BUG",
+      "description": "La vista de albaranes permite buscar por número. Al buscar el A-842, que aparece en la lista, muestra «sin resultados».",
+      "expectedCategory": "BUG",
+      "difficulty": "obvious",
+      "tags": ["compatibilidad"],
+      "rationale": "La búsqueda existente no encuentra un registro presente."
+    },
+    {
+      "id": "I004-COMP-FEATURE",
+      "description": "Me gustaría poder agrupar los tablones del almacén por zona de reparto. Ahora solo puedo verlos en una lista única.",
+      "expectedCategory": "FEATURE",
+      "difficulty": "obvious",
+      "tags": ["compatibilidad"],
+      "rationale": "Solicita una capacidad de agrupación nueva."
+    },
+    {
+      "id": "I004-COMP-QUESTION",
+      "description": "¿Dónde puedo consultar el significado de los colores de las etiquetas de un albarán?",
+      "expectedCategory": "QUESTION",
+      "difficulty": "obvious",
+      "tags": ["compatibilidad"],
+      "rationale": "Pide información sobre un elemento existente, sin describir fallo o solicitar mejora."
+    }
+  ]
+}

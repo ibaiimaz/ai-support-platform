@@ -131,6 +131,12 @@ La comparación verifica IDs, dataset, fase, protocolo, modelo y configuración.
 
 `npm run verify` prueba el flujo con mocks y directorios temporales, sin Ollama real. Los casos de ranking usan resultados ficticios y no constituyen selección de un ganador del experimento.
 
+## Comparación de sistemas locales I004
+
+I004 está **`Verified`**, cierre **2026-11-09**, tras revisión final y copia privada verificada fuera del proyecto. El benchmark original del **2026-11-06**, auditado desde evidencias persistidas el **2026-11-09**, registra Llama **44/60** y Gemma **57/60**, cero errores técnicos/timeouts y **126/126** intentos consumidos (6 de compatibilidad + 120 de benchmark). Todos los permisos están desactivados. No hay validación independiente ni promoción; Llama continúa en producción. La [especificación](specs/iterations/004-local-model-comparison.md#19-recuperación-de-evidencias--2026-11-09) registra trazabilidad, criterios satisfechos y conservación verificada; la [guía](evals/experiments/i004-usage.md) explica controles y conservación. Informes privados locales: `evals/reports/i004/` (originales), `evals/reports/i004-benchmark-comparison-2026-11-06.json` e `evals/reports/i004-benchmark-report-2026-11-09.md`.
+
+`npm run verify` prueba la infraestructura con proveedores/observadores simulados. Los scripts `eval:model-comparison` y `eval:models:compare` están disponibles tras compilar; los ejemplos de la guía solo se ejecutarán con las autorizaciones posteriores correspondientes. I004 usa timeout experimental 45 s y el original; producción sigue con Llama y 30 s. Los informes v3/ledger propios se guardarán en `evals/reports/i004/`, excluidos de Git, sin sobrescribir I003. Sin validación independiente ni promoción.
+
 ## Documentación y proceso
 
 - [Producto](specs/product.md): visión, alcance y reglas generales.
@@ -138,6 +144,7 @@ La comparación verifica IDs, dataset, fase, protocolo, modelo y configuración.
 - [Iteración 001](specs/iterations/001-classification.md): requisitos, aceptación, tareas y trazabilidad.
 - [Iteración 002](specs/iterations/002-classification-evals.md): evaluación semántica y baseline experimental verificada.
 - [Iteración 003](specs/iterations/003-prompt-robustness.md): experimento de robustez `Verified` el 2026-11-06, cerrado con resultado negativo y baseline original conservada.
+- [Iteración 004](specs/iterations/004-local-model-comparison.md): comparación exploratoria de sistemas Ollama, Verified el 2026-11-09; sin promoción ni validación independiente.
 - [ADR-001](specs/adr/ADR-001-sync-classification.md): clasificación síncrona.
 - [ADR-002](specs/adr/ADR-002-provider-abstraction.md): separación del proveedor.
 - [AGENTS.md](AGENTS.md): reglas permanentes para agentes.

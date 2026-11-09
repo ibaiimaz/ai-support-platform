@@ -2,6 +2,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { validateAnyReport, type ExperimentReport } from './report.js';
 import { analyzeResults, type AttackTargets } from './analysis.js';
 import { baselinePrompt, findPrompt } from './prompts.js';
+import { pairResults } from './paired-results.js';
 
 export function compareReports(
   baseline: ExperimentReport,
@@ -43,36 +44,7 @@ export function compareReports(
     throw new Error('Identidad de prompt divergente del registro.');
   }
 
-  const baselineById = new Map(baseline.results.map((result) => [result.id, result]));
-  const transitions = {
-    correct: { correct: 0, incorrect: 0, error: 0 },
-    incorrect: { correct: 0, incorrect: 0, error: 0 },
-    error: { correct: 0, incorrect: 0, error: 0 },
-  };
-  const pairs = candidate.results.map((result) => {
-    const control = baselineById.get(result.id);
-
-    if (
-      !control ||
-      control.expectedCategory !== result.expectedCategory ||
-      control.difficulty !== result.difficulty ||
-      !isDeepStrictEqual(control.tags, result.tags)
-    ) {
-      throw new Error('Referencias de ejemplos no compatibles.');
-    }
-
-    transitions[control.status][result.status]++;
-
-    return {
-      id: result.id,
-      expectedCategory: result.expectedCategory,
-      difficulty: result.difficulty,
-      baselineStatus: control.status,
-      candidateStatus: result.status,
-      baselinePredicted: control.status === 'error' ? null : control.predictedCategory,
-      candidatePredicted: result.status === 'error' ? null : result.predictedCategory,
-    };
-  });
+  const { pairs, transitions } = pairResults(baseline.results, candidate.results);
   const legitimatePairs = pairs.filter((pair) => pair.difficulty !== 'adversarial');
   const semanticRegressions = legitimatePairs.filter(
     (pair) => pair.baselineStatus === 'correct' && pair.candidateStatus === 'incorrect',

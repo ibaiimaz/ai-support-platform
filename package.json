@@ -11,7 +11,9 @@
     "lint": "eslint . --max-warnings 0",
     "verify": "npm run format:check && npm run lint && npm test",
     "eval:classification": "node dist/src/evaluation/main.js",
-    "eval:compare": "node dist/src/evaluation/compare-main.js"
+    "eval:compare": "node dist/src/evaluation/compare-main.js",
+    "eval:model-comparison": "node dist/src/evaluation/model-comparison/main.js",
+    "eval:models:compare": "node dist/src/evaluation/model-comparison/compare-main.js"
   },
   "dependencies": {
     "ajv": "8.20.0",
