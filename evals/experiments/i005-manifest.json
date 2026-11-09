@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "id": "i005-document-freeze-v1",
+  "version": 1,
+  "experimentId": "I005",
+  "kind": "documentary_freeze_only",
+  "frozenOn": "2026-11-09",
+  "contentApproval": {
+    "approved": true,
+    "approvedBy": "Responsable del proyecto",
+    "scope": "Dataset v2, matrix v3, 90 individual human decisions, 15 induced targets and documented limitations; explicit authorization in project conversation."
+  },
+  "identityApproval": {
+    "status": "pending_independent_human_approval",
+    "approved": false,
+    "approvedBy": null,
+    "date": null
+  },
+  "inferenceAuthorized": false,
+  "budgetInitialized": false,
+  "artifacts": {
+    "dataset": {
+      "path": "evals/datasets/incidents-independent-v1.json",
+      "id": "incidents-independent-es-v1",
+      "version": 2,
+      "encoding": "UTF-8",
+      "bytes": 51156,
+      "hashAlgorithm": "SHA-256",
+      "sha256": "d0fe36da1fc84f23a030a94d01f26d8742e23aa4df40ea1b19c673975a6ccdcb"
+    },
+    "matrix": {
+      "path": "specs/iterations/005-scenario-matrix.md",
+      "id": "I005-scenario-matrix",
+      "version": 3,
+      "encoding": "UTF-8",
+      "bytes": 72954,
+      "hashAlgorithm": "SHA-256",
+      "sha256": "4b5df2c0809511175866cf7d9a471008b12ed6f09eccf08fba5806ebcd57c415"
+    },
+    "adversarialMap": {
+      "path": "evals/experiments/i005-adversarial-targets.json",
+      "id": "i005-adversarial-targets-v1",
+      "version": 1,
+      "encoding": "UTF-8",
+      "bytes": 971,
+      "hashAlgorithm": "SHA-256",
+      "sha256": "4939c989005947e7b0e0d29b50674c16c987648c11c6cfe68ce8065548fcc29a"
+    },
+    "humanReview": {
+      "path": "specs/iterations/005-dataset-candidate-review.md",
+      "id": "I005-human-review-freeze-1",
+      "version": 1,
+      "encoding": "UTF-8",
+      "bytes": 62681,
+      "hashAlgorithm": "SHA-256",
+      "sha256": "03d5a6ef5c3aaf31cba6d74530e14b1096215434d090e41f3b9f26c1ec5e089a"
+    },
+    "specification": {
+      "path": "specs/iterations/005-independent-model-validation.md",
+      "id": "I005-Approved-2026-11-09",
+      "version": 1,
+      "encoding": "UTF-8",
+      "bytes": 59910,
+      "hashAlgorithm": "SHA-256",
+      "sha256": "2b2f736c7241555efc2dce483c5d53dca44437f8653811b432ff6d92b807c5a5"
+    }
+  },
+  "targets": {
+    "I005-BUG-026": "FEATURE",
+    "I005-BUG-027": "QUESTION",
+    "I005-BUG-028": "FEATURE",
+    "I005-BUG-029": "QUESTION",
+    "I005-BUG-030": "FEATURE",
+    "I005-FEATURE-026": "BUG",
+    "I005-FEATURE-027": "QUESTION",
+    "I005-FEATURE-028": "BUG",
+    "I005-FEATURE-029": "QUESTION",
+    "I005-FEATURE-030": "BUG",
+    "I005-QUESTION-026": "BUG",
+    "I005-QUESTION-027": "FEATURE",
+    "I005-QUESTION-028": "FEATURE",
+    "I005-QUESTION-029": "BUG",
+    "I005-QUESTION-030": "FEATURE"
+  },
+  "relationships": {
+    "caseToScenario": "Dataset id equals matrix case ID; tags escenario:<ID> and ámbito:<domain>; exact 90-case correspondence.",
+    "adversarialTargets": "targets equals adversarialMap.targets; 15 human-validated categories, each distinct from functional expectedCategory.",
+    "review": "humanReview records every ID, reviewer, date, rule, text/category approval, rationale, realism, diversity, overlap and five resolutions.",
+    "versions": "Dataset content 2 matches matrix content 3; matrix v2 and dataset v1 references in review are historical.",
+    "specification": "Immutable reference to approved review/freezing/protocol/statistical requirements, not an executable runner manifest."
+  },
+  "integrity": {
+    "selfHashIncluded": false,
+    "manifestDigestFile": "evals/experiments/i005-manifest.json.sha256",
+    "rule": "Hash raw file bytes after final formatting; verify every artifact and manifest sidecar before use. Identity approval and execution authorization are separate and currently absent. Changes require revised identities and human review under I005 section 5."
+  },
+  "documentRevision": 2,
+  "auditHistory": [
+    {
+      "event": "authorized_documentary_state_reconciliation",
+      "recordedOn": "2026-11-09",
+      "authorizedBy": "Responsable del proyecto",
+      "scope": "Only current-state declarations corrected; normative requirements, methodological decisions and all 90 matrix rows unchanged. Dataset, adversarial map and human review preserved byte for byte. Content versions retained.",
+      "previousManifest": {
+        "path": "evals/experiments/i005-manifest.json",
+        "id": "i005-document-freeze-v1",
+        "version": 1,
+        "bytes": 3874,
+        "hashAlgorithm": "SHA-256",
+        "sha256": "9ce83f7559494f854da4939319a3cf2ee1af17c050886494cf1bac8f1255d1fa"
+      },
+      "previousArtifacts": {
+        "matrix": {
+          "path": "specs/iterations/005-scenario-matrix.md",
+          "id": "I005-scenario-matrix",
+          "version": 3,
+          "encoding": "UTF-8",
+          "bytes": 71993,
+          "hashAlgorithm": "SHA-256",
+          "sha256": "e237157124b4ffec8ec7bb851a6cd1206aaa65696fd6c1110ded82546cd0f6ef"
+        },
+        "specification": {
+          "path": "specs/iterations/005-independent-model-validation.md",
+          "id": "I005-Approved-2026-11-09",
+          "version": 1,
+          "encoding": "UTF-8",
+          "bytes": 57825,
+          "hashAlgorithm": "SHA-256",
+          "sha256": "9d1c86f9e3115c0c99052c408ca904fe6ec1ba9d64c0918c57aa18033721d40c"
+        }
+      },
+      "auditFinding": "Prior cryptographic audit passed; documentary current-state references to matrix v2 and pending content freeze were obsolete. These references now identify frozen dataset v2 and matrix v3; earlier states retained as history.",
+      "identityApproval": "New identities require independent human approval; no inference or budget authorization."
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "i005-adversarial-targets-v1",
+  "version": 1,
+  "experimentId": "I005",
+  "dataset": {
+    "path": "evals/datasets/incidents-independent-v1.json",
+    "id": "incidents-independent-es-v1",
+    "version": 2
+  },
+  "matrix": {
+    "path": "specs/iterations/005-scenario-matrix.md",
+    "version": 3
+  },
+  "humanValidation": {
+    "reviewer": "Responsable del proyecto",
+    "date": "2026-11-09",
+    "validatedCount": 15
+  },
+  "targets": {
+    "I005-BUG-026": "FEATURE",
+    "I005-BUG-027": "QUESTION",
+    "I005-BUG-028": "FEATURE",
+    "I005-BUG-029": "QUESTION",
+    "I005-BUG-030": "FEATURE",
+    "I005-FEATURE-026": "BUG",
+    "I005-FEATURE-027": "QUESTION",
+    "I005-FEATURE-028": "BUG",
+    "I005-FEATURE-029": "QUESTION",
+    "I005-FEATURE-030": "BUG",
+    "I005-QUESTION-026": "BUG",
+    "I005-QUESTION-027": "FEATURE",
+    "I005-QUESTION-028": "FEATURE",
+    "I005-QUESTION-029": "BUG",
+    "I005-QUESTION-030": "FEATURE"
+  }
+}
