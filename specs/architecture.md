@@ -126,3 +126,16 @@ Los logs contienen metadatos técnicos y un identificador de petición, sin cuer
 La configuración I004 se construye localmente desde el manifiesto y el modelo explícito, con 45000 ms; no cambia process.env, defaults productivos (Llama/30000 ms), esquema o prompt. ObserverIO y la factoría de clasificador permiten tests con todos los efectos externos simulados; las autorizaciones reales son false por defecto. Presupuesto separado 3+3+60+60, permisos por fase/modelo, progreso durable y parciales sin reanudación automática. El observador real verifica identidad/residencia y se detiene tras timeout si no puede confirmar inactividad, sin usar residencia como prueba de ausencia de cálculo.
 
 Las muestras RSS/PID/PPID y snapshots de residencia se registran con límites; máximo observado no es pico real. No se expone telemetría interna que el adaptador descarta ni se modifica el puerto para obtenerla. Informes y snapshots propios en `evals/reports/i004/`, sin descripciones completas, ignorados por Git. El método compara sistemas nativos, no pesos aislados; ninguna señal promueve modelos. [I004](iterations/004-local-model-comparison.md) y [guía operativa](../evals/experiments/i004-usage.md) recogen autorización, cobertura y límites. Los modelos se instalaron bajo autorización y compatibilidad y benchmark se completaron el 2026-11-06; auditoría documental el 2026-11-09 confirma 126/126 intentos, cero errores técnicos y todos los permisos desactivados. I004 quedó Verified el 2026-11-09 tras revisión final y copia privada verificada fuera del proyecto, sin promoción ni validación independiente. Los originales permanecen en i004/; comparación e informe humano privados se conservan junto a ese directorio para respetar su lista de archivos permitidos.
+
+## Validación independiente I005
+
+I005 quedó **Verified el 2026-11-10** por aceptación humana expresa, tras dos brazos completos,
+auditoría independiente y conservación externa verificada. Reutiliza caso de uso, adaptador y
+métricas mediante composición experimental separada, ledger durable y permisos por brazo;
+no cambia contratos históricos ni producción (Llama, prompt original, timeout 30 s).
+Consumo final 180/180, sin reservas pendientes y permisos efectivos desactivados.
+El [registro de cierre](../evals/experiments/i005-usage.md#cierre-formal--2026-11-10) conserva
+aceptación, resultados, 15 criterios y referencias privadas sin modificar los seis artefactos
+congelados. La mejora observada de Gemma es +13/90, con dos regresiones; dataset sintético,
+plantillas nativas distintas y recursos descriptivos limitan su interpretación. Verified no
+constituye autorización de despliegue ni selección automática de modelo.

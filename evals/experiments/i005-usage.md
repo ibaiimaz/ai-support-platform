@@ -2,21 +2,17 @@
 
 ## Estado y fuentes de verdad
 
-Infraestructura implementada para revisión técnica; ejecución experimental **no autorizada**.
-La especificación y los cinco artefactos documentales permanecen congelados, sin cambios de
-estado ni identidades. El estado `Approved` de la especificación no se interpreta como un
-permiso para inicializar o inferir. Esta guía registra el estado de implementación sin alterar
-el conjunto documental aprobado.
+**Estado vigente: `Verified` — 2026-11-10**, por aprobación humana expresa del responsable:
+«APRUEBO FORMALMENTE I005 Y AUTORIZO SU MARCADO COMO VERIFIED».
+El [registro de cierre](#cierre-formal--2026-11-10) de esta guía documenta la aceptación final.
 
-Consultar la [especificación aprobada](../../specs/iterations/005-independent-model-validation.md),
-el [manifiesto congelado](i005-manifest.json) y su archivo `.sha256`. La autorización humana
-de sus identidades definitivas es anterior a esta implementación. El manifiesto conserva
-sus declaraciones históricas; la autorización operativa posterior se expresa exclusivamente
-en [i005-operation.json](i005-operation.json).
-
-No se han creado resultados ni ledger experimental I005. Todas las pruebas de ejecución usan
-proveedores simulados y directorios temporales. Los permisos de inicialización, Llama y Gemma
-se entregan desactivados; el PID del servidor dedicado debe confirmarse en un preflight futuro.
+La [especificación aprobada](../../specs/iterations/005-independent-model-validation.md),
+el [manifiesto congelado](i005-manifest.json) y su sidecar conservan sus bytes e identidades.
+Sus estados de diseño son históricos; el cierre se registra aquí sin alterar los seis
+artefactos congelados. Las aprobaciones operativas históricas permanecen en
+[i005-operation.json](i005-operation.json) y los snapshots. El ledger durable cierra ambos
+brazos: todos los permisos efectivos están desactivados, con **180/180 intentos** consumidos.
+Esta aceptación no autoriza nuevas inferencias ni promoción a producción.
 
 ## Herramientas y límites
 
@@ -35,7 +31,7 @@ No existen flags para seleccionar otro dataset, ignorar hashes, variar opciones,
 forzar, repetir o ejecutar compatibilidad. Las variables de entorno productivas no autorizan
 I005 ni cambian su configuración efectiva.
 
-### Procedimiento futuro, sujeto a autorizaciones separadas
+### Procedimiento histórico, sujeto a autorizaciones separadas
 
 Los siguientes comandos se documentan para revisión; **no deben ejecutarse con la autorización
 actual**:
@@ -206,11 +202,10 @@ del adaptador sustituye `fetch` y no consulta Ollama. Se cubren cuotas/identidad
 orden, presupuesto, concurrencia entre procesos, persistencia fallida, errores y parciales,
 privacidad, métricas manuales, bootstrap reproducible y regresión histórica.
 
-Pendientes fuera de esta entrega: revisión técnica de la implementación, preflight y PID
-actual autorizados, inicialización explícita, autorizaciones de ambos brazos con revisión
-intermedia, dos ejecuciones reales, revisión de regresiones, conservación privada externa y
-aceptación final. El destino autorizado anteriormente para I004 no se presume autorizado para
-I005. No marcar `Verified` ni declarar satisfechas las evidencias experimentales antes de ello.
+Los puntos de control de revisión técnica, preflight, inicialización, ejecución autorizada de
+ambos brazos, revisión intermedia y final, conservación externa y aceptación humana están
+completados. Las instrucciones anteriores describen el procedimiento histórico; no permiten
+reabrir ni repetir el experimento cerrado.
 
 Los 90 casos sintéticos independientes del desarrollo no representan producción. Los 15
 adversariales miden principalmente instrucciones explícitas; las plantillas nativas forman
@@ -232,3 +227,84 @@ B1 e I1–I5 implementados para segunda revisión técnica, sin autorización ex
 El bootstrap tiene además un oracle independiente con signos positivos/negativos en los nueve
 estratos. Las correcciones no cambian el protocolo estadístico ni los artefactos congelados.
 La revisión técnica y las autorizaciones posteriores siguen pendientes.
+
+## Cierre formal — 2026-11-10
+
+**I005: Verified.** El responsable del proyecto aprueba expresamente el cierre tras la
+auditoría final, revisión de regresiones y conservación externa verificada. Este registro
+cumple I005-T-10 y la Definition of Done final sin modificar el conjunto documental congelado.
+La verificación determinista previa fue satisfactoria: **142/142 tests**. El cierre documental
+no repite inferencias ni modifica resultados, controles, código o dependencias.
+
+### Evidencias aceptadas
+
+Rutas relativas a la raíz del proyecto, privadas y excluidas de Git:
+
+| Evidencia              | Ruta                                                            | SHA-256                                                            |
+| ---------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Llama                  | `evals/reports/i005/dcbb6044-d320-4d9f-bdf4-a9504b4c2cae.json`  | `52d7d1faa133182ac3ea36a04bb009e01af6acb7ff0e64bcce5df3c299aa962c` |
+| Gemma                  | `evals/reports/i005/f722bc85-6d9e-4e6a-8468-d3ccae79ba5c.json`  | `a213d0025a35831080d8a3d12ff06a059f7bf6f732032db5c100db15a49476fd` |
+| Comparación emparejada | `evals/reports/i005-analysis/comparison-dcbb6044-f722bc85.json` | `e25f50e334183aa59a6343c7cde8a9bf4cf1ec8ea6c1fddff26e71dc4bc5da14` |
+
+Paquete externo autorizado:
+`~/Lab/ai-suppor-platform-results/i005/i005-evidence-2026-11-10-v1-private.tar.gz`.
+SHA-256: `21cb78a9166fdcec2e14945585994ffa96c8f8174ef3d0294245a7967775a1ca`.
+Tamaño: 184.357 bytes; 78 miembros, 77 inventariados y 74 cotejados contra originales.
+Su sidecar `.sha256` y recibo `.verification.json` fueron verificados nuevamente al cierre.
+Recibo local: `evals/reports/i005-analysis/i005-ac13-preservation-2026-11-10-v1.verification.json`.
+La síntesis de auditoría previa está en `preservation/final-audit.md` dentro del paquete.
+El paquete es una instantánea anterior al cierre y permanece inmutable.
+
+### Resultado y límites aceptados
+
+Llama: **68/90**, accuracy **75,555556 %**, macro-F1 **0,7540674603**.
+Gemma: **81/90**, accuracy **90 %**, macro-F1 **0,9004662005**.
+Ganancia neta **+13/90**, equivalente a **+14,444444 puntos porcentuales**:
+15 correcciones, 2 regresiones, 66 aciertos comunes y 7 errores comunes.
+Umbral práctico observado **+9/90 cumplido**.
+
+Bootstrap pareado estratificado, xorshift32 seed 5005, 10.000 remuestreos e intervalo
+percentil nominal del 95 %: **[+7,777778; +22,222222] puntos porcentuales**.
+El límite inferior equivale a +7/90 y no alcanza +9/90: se acepta la mejora observada,
+sin garantía estadística de una mejora mínima equivalente al umbral práctico.
+
+Las regresiones revisadas son `I005-BUG-030` (adversarial, BUG → FEATURE en Gemma) e
+`I005-FEATURE-006` (legítima, FEATURE → QUESTION). Gemma conserva siete errores adversariales;
+la coincidencia con una categoría inducida no demuestra causalmente obediencia al ataque.
+Los 15 ataques explícitos no representan todas las formas de prompt injection.
+
+Dataset independiente mediante controles procedimentales, pero sintético; una única ejecución
+por modelo. Se comparan sistemas Ollama completos, incluidas sus plantillas nativas, sin
+atribuir las diferencias exclusivamente a los pesos. Latencia y RSS son descriptivos: el
+máximo observado por muestreo no es un pico real. No se demuestra superioridad general ni
+comportamiento en producción. La copia externa está en el mismo disco; se recomienda una
+segunda copia privada cifrada en soporte físicamente independiente.
+
+### Aceptación de criterios
+
+Todos los criterios se consideran satisfechos por la auditoría final aceptada y la aprobación
+humana del 2026-11-10; la tabla referencia su evidencia sin cambiar requisitos normativos.
+
+| Criterio   | Estado     | Evidencia de aceptación                                                                              |
+| ---------- | ---------- | ---------------------------------------------------------------------------------------------------- |
+| I005-AC-01 | Satisfecho | Validador y fixtures deterministas; dataset de 90 casos y cuotas verificadas.                        |
+| I005-AC-02 | Satisfecho | Matriz v3 y registro humano congelado de 90 decisiones, procedencia y exposición declaradas.         |
+| I005-AC-03 | Satisfecho | Dataset v2, matriz v3 y 15 objetivos aprobados; seis identidades intactas.                           |
+| I005-AC-04 | Satisfecho | Tests de payload/configuración, identidades en ambos runs y producción intacta.                      |
+| I005-AC-05 | Satisfecho | Tests negativos, preflight y registro operativo de inicialización autorizada.                        |
+| I005-AC-06 | Satisfecho | Regresiones deterministas de persistencia, presupuesto, bloqueo y concurrencia.                      |
+| I005-AC-07 | Satisfecho | Runs completos Llama → Gemma, 90 + 90, sin reintentos ni warm-up.                                    |
+| I005-AC-08 | Satisfecho | Tests de errores/parciales; cero errores técnicos o inciertos en los runs reales.                    |
+| I005-AC-09 | Satisfecho | Métricas, matrices, subgrupos e inducidas recalculadas en la auditoría independiente.                |
+| I005-AC-10 | Satisfecho | Comparación por ID y revisión aceptada de las dos regresiones, incluida la legítima.                 |
+| I005-AC-11 | Satisfecho | Bootstrap reproducido independientemente y umbral observado interpretado con sus límites.            |
+| I005-AC-12 | Satisfecho | Latencias, RSS, cobertura y límites registrados en informes y comparación.                           |
+| I005-AC-13 | Satisfecho | Paquete externo reabierto, inventario/cotejo/sidecar y recibos verificados.                          |
+| I005-AC-14 | Satisfecho | Verificación determinista previa: formato, lint, compilación y 142/142 tests; trazabilidad revisada. |
+| I005-AC-15 | Satisfecho | Aprobación humana expresa y fechada; controles cerrados y cierre registrado aquí.                    |
+
+**Verified** acredita el cumplimiento de criterios y el respaldo de las conclusiones por
+las evidencias. No autoriza despliegue, selección automática de modelo ni nuevas ejecuciones.
+Producción conserva `llama3.1:8b`, prompt original y timeout de 30 segundos. Presupuesto final:
+**180/180**, cero reservas pendientes y todos los permisos efectivos desactivados. Las
+aprobaciones históricas no se reabren ni se eliminan. No se realizan commits ni pushes.

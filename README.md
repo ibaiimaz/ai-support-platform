@@ -137,6 +137,17 @@ I004 está **`Verified`**, cierre **2026-11-09**, tras revisión final y copia p
 
 `npm run verify` prueba la infraestructura con proveedores/observadores simulados. Los scripts `eval:model-comparison` y `eval:models:compare` están disponibles tras compilar; los ejemplos de la guía solo se ejecutarán con las autorizaciones posteriores correspondientes. I004 usa timeout experimental 45 s y el original; producción sigue con Llama y 30 s. Los informes v3/ledger propios se guardarán en `evals/reports/i004/`, excluidos de Git, sin sobrescribir I003. Sin validación independiente ni promoción.
 
+## Validación independiente I005
+
+I005 está **`Verified` desde el 2026-11-10**, tras aceptación humana y conservación externa
+verificada. Llama obtuvo **68/90** y Gemma **81/90**, con 15 correcciones y 2 regresiones;
+ganancia neta **+13/90**. El intervalo nominal del 95 % es **[+7,777778; +22,222222] puntos
+porcentuales**: supera el umbral práctico observado +9/90, sin garantizar esa mejora mínima.
+El dataset es sintético y se comparan sistemas Ollama completos; no se autoriza promoción.
+Presupuesto **180/180**, permisos efectivos cerrados y producción intacta. El
+[registro de cierre](evals/experiments/i005-usage.md#cierre-formal--2026-11-10) recoge los 15
+criterios, evidencias y limitaciones sin alterar la especificación congelada ni el paquete privado.
+
 ## Documentación y proceso
 
 - [Producto](specs/product.md): visión, alcance y reglas generales.

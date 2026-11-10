@@ -16,19 +16,12 @@
     "inference": {
       "endpoint": "/api/chat",
       "stream": false,
-      "options": {
-        "temperature": 0
-      },
+      "options": { "temperature": 0 },
       "format": {
         "type": "object",
         "required": ["category"],
         "additionalProperties": false,
-        "properties": {
-          "category": {
-            "type": "string",
-            "enum": ["BUG", "FEATURE", "QUESTION"]
-          }
-        }
+        "properties": { "category": { "type": "string", "enum": ["BUG", "FEATURE", "QUESTION"] } }
       }
     }
   },
@@ -55,35 +48,31 @@
   "environment": {
     "ollamaVersion": "0.40.14",
     "hostSha256": "94f0768b82abba7ffbe81d8272135fac2699ab9d31b65b8807abf64c14714efa",
-    "serverPid": null,
-    "dedicated": false,
-    "memoryUnavailable": {
-      "approved": false,
-      "approvedBy": null,
-      "date": null
-    }
+    "serverPid": 6581,
+    "dedicated": true,
+    "memoryUnavailable": { "approved": false, "approvedBy": null, "date": null }
   },
   "authorization": {
     "initialize": {
-      "approved": false,
-      "approvedBy": null,
-      "date": null
+      "approved": true,
+      "approvedBy": "Responsable del proyecto",
+      "date": "2026-11-10"
     },
     "llama3.1:8b": {
-      "approved": false,
-      "approvedBy": null,
-      "date": null
+      "approved": true,
+      "approvedBy": "Responsable del proyecto",
+      "date": "2026-11-10"
     },
     "gemma3:12b": {
-      "approved": false,
-      "approvedBy": null,
-      "date": null
+      "approved": true,
+      "approvedBy": "Responsable del proyecto",
+      "date": "2026-11-10"
     }
   },
   "llamaReview": {
-    "approved": false,
-    "approvedBy": null,
-    "date": null,
-    "reportSha256": null
+    "approved": true,
+    "approvedBy": "Responsable del proyecto",
+    "date": "2026-11-10",
+    "reportSha256": "52d7d1faa133182ac3ea36a04bb009e01af6acb7ff0e64bcce5df3c299aa962c"
   }
 }
