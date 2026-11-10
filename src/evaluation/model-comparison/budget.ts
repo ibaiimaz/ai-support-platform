@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, open, readFile, rename, unlink, readdir } from 'node:fs/promises';
-import type { FileHandle } from 'node:fs/promises';
+import { persist, locked, synchronization, type DiskSynchronization } from '../durable-files.js';
+import { mkdir, readFile, unlink, readdir } from 'node:fs/promises';
 import { isDeepStrictEqual } from 'node:util';
 import { sha256 } from '../dataset.js';
 import { join, dirname } from 'node:path';
 import { Ajv } from 'ajv';
 import { objectSchema, hashSchema, models, phases, type Model, type Phase } from './protocol.js';
 import type { EvaluationResult } from '../types.js';
+
+export type { DiskSynchronization } from '../durable-files.js';
 
 export interface Attempt {
   id: string;
@@ -157,25 +159,6 @@ export function reserve(
   return attempt;
 }
 
-export interface DiskSynchronization {
-  file: (handle: FileHandle) => Promise<void>;
-  directory: (path: string) => Promise<void>;
-}
-
-const synchronization: DiskSynchronization = {
-  async file(handle) {
-    await handle.sync();
-  },
-  async directory(path) {
-    const handle = await open(path, 'r');
-    try {
-      await handle.sync();
-    } finally {
-      await handle.close();
-    }
-  },
-};
-
 interface Initialization {
   schemaVersion: 1;
   experimentId: 'I004';
@@ -197,32 +180,6 @@ const validateInitialization = new Ajv().compile<Initialization>(
     ledgerSha256: { anyOf: [hashSchema, { type: 'null' }] },
   }),
 );
-
-async function persist(path: string, bytes: string, exclusive: boolean, sync: DiskSynchronization) {
-  const target = exclusive ? path : `${path}-${randomUUID()}.tmp`;
-  const handle = await open(target, 'wx', 0o600);
-  try {
-    await handle.writeFile(bytes);
-    await sync.file(handle);
-  } finally {
-    await handle.close();
-  }
-  if (!exclusive) {
-    await rename(target, path);
-  }
-  await sync.directory(dirname(path));
-}
-
-async function locked<T>(directory: string, operation: () => Promise<T>): Promise<T> {
-  const path = join(directory, 'budget.lock');
-  const handle = await open(path, 'wx', 0o600);
-  try {
-    return await operation();
-  } finally {
-    await handle.close();
-    await unlink(path);
-  }
-}
 
 async function isReadOnlyPreflight(directory: string, name: string) {
   if (!/^preflight-readonly-[0-9TZ.:-]+\.json$/.test(name)) {

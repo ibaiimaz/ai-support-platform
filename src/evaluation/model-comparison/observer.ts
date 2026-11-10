@@ -3,7 +3,7 @@ import { promisify } from 'node:util';
 import { cpus, totalmem, platform, arch, release } from 'node:os';
 import { basename } from 'node:path';
 import { sha256 } from '../dataset.js';
-import type { Manifest, Model, ModelIdentity } from './protocol.js';
+import type { Model, ModelIdentity } from './protocol.js';
 import { models } from './protocol.js';
 import { readProcessMemory, type MemorySample } from './memory.js';
 
@@ -73,7 +73,12 @@ export interface ObserverIO {
   memory?: typeof readProcessMemory;
 }
 
-export function createObserver(manifest: Manifest, io: ObserverIO = {}): Observer {
+export interface ObservationSettings {
+  protocol: { providerOrigin: string };
+  environment: { serverPid: number | null };
+}
+
+export function createObserver(manifest: ObservationSettings, io: ObserverIO = {}): Observer {
   const request = io.request ?? fetch;
   const command = io.command ?? executeFile;
   const origin = manifest.protocol.providerOrigin;
