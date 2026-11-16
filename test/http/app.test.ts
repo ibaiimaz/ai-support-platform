@@ -7,17 +7,31 @@ import {
   type ProviderFailure,
 } from '../../src/application/classification-errors.js';
 import { categories } from '../../src/domain/classification.js';
-import { OllamaClassifier } from '../../src/infrastructure/ollama/ollama-classifier.js';
+import type { ClassificationLlm } from '../../src/application/classification-llm.js';
+import type { ToolCallingDependencies } from '../../src/application/classify-incident.js';
+import { createClassificationDependencies } from '../../src/composition.js';
+import { SyntheticIncidentRepository } from '../../src/infrastructure/incidents/synthetic-incident-repository.js';
+import { toolCallingInstructions } from '../../src/infrastructure/ollama/tool-calling-instructions.js';
 
 const url = '/api/v1/incidents/classify';
 
+function dependencies(llm: ClassificationLlm): ToolCallingDependencies {
+  return {
+    llm,
+    repository: new SyntheticIncidentRepository(),
+    systemInstructions: toolCallingInstructions,
+  };
+}
+
 test('I001-AC-01 I001-AC-11 categorías exactas con puerto simulado', async (t) => {
   for (const category of categories) {
-    const app = buildApp({
-      async classify() {
-        return { category };
-      },
-    });
+    const app = buildApp(
+      dependencies({
+        async infer() {
+          return { type: 'classification', category };
+        },
+      }),
+    );
     t.after(() => app.close());
     const response = await app.inject({ method: 'POST', url, payload: { description: 'text' } });
 
@@ -28,12 +42,14 @@ test('I001-AC-01 I001-AC-11 categorías exactas con puerto simulado', async (t) 
 
 test('I001-AC-02 I001-AC-04 entradas rechazadas antes del proveedor', async (t) => {
   let calls = 0;
-  const app = buildApp({
-    async classify() {
-      calls++;
-      return { category: 'BUG' };
-    },
-  });
+  const app = buildApp(
+    dependencies({
+      async infer() {
+        calls++;
+        return { type: 'classification', category: 'BUG' };
+      },
+    }),
+  );
   t.after(() => app.close());
 
   for (const payload of [
@@ -93,12 +109,16 @@ test('I001-AC-02 I001-AC-04 entradas rechazadas antes del proveedor', async (t) 
 
 test('I001-AC-03 límites Unicode y normalización', async (t) => {
   const seen: string[] = [];
-  const app = buildApp({
-    async classify(d) {
-      seen.push(d);
-      return { category: 'QUESTION' };
-    },
-  });
+  const app = buildApp(
+    dependencies({
+      async infer(messages) {
+        const user = messages.find((message) => message.role === 'user');
+        assert.ok(user && 'content' in user);
+        seen.push(user.content);
+        return { type: 'classification', category: 'QUESTION' };
+      },
+    }),
+  );
   t.after(() => app.close());
 
   for (const character of ['a', '😀']) {
@@ -135,11 +155,13 @@ test('I001-AC-06 I001-AC-07 I001-AC-08 I001-AC-14 errores públicos genéricos',
     'http_error',
     'invalid_response',
   ] as ProviderFailure[]) {
-    const app = buildApp({
-      async classify() {
-        throw new ClassificationError(kind);
-      },
-    });
+    const app = buildApp(
+      dependencies({
+        async infer() {
+          throw new ClassificationError(kind);
+        },
+      }),
+    );
     t.after(() => app.close());
     const r = await app.inject({ method: 'POST', url, payload: { description: 'SECRET' } });
 
@@ -149,11 +171,13 @@ test('I001-AC-06 I001-AC-07 I001-AC-08 I001-AC-14 errores públicos genéricos',
     assert.ok(!r.body.includes(kind));
     assert.ok(!r.body.includes('SECRET'));
   }
-  const app = buildApp({
-    async classify() {
-      throw new Error('SECRET');
-    },
-  });
+  const app = buildApp(
+    dependencies({
+      async infer() {
+        throw new Error('SECRET');
+      },
+    }),
+  );
   t.after(() => app.close());
   const r = await app.inject({ method: 'POST', url, payload: { description: 'SECRET' } });
 
@@ -175,11 +199,11 @@ test('I001-AC-10 logs sin contenido sensible, incluso errores y rutas desconocid
     },
   });
   const app = buildApp(
-    {
-      async classify() {
+    dependencies({
+      async infer() {
         throw new Error('PROVIDER_SECRET PROMPT_SECRET RESPONSE_SECRET');
       },
-    },
+    }),
     { stream },
   );
   t.after(() => app.close());
@@ -209,18 +233,20 @@ test('I001-AC-10 logs sin contenido sensible, incluso errores y rutas desconocid
 
 test('I001-AC-09 arranque sin conexión a Ollama', async (t) => {
   const app = buildApp(
-    new OllamaClassifier({ baseUrl: 'http://127.0.0.1:1', model: 'missing', timeoutMs: 10 }),
+    createClassificationDependencies({ baseUrl: 'http://127.0.0.1:1', model: 'missing' }),
   );
   t.after(() => app.close());
   await app.ready();
 });
 
 test('I001-AC-13 resultado semánticamente incorrecto conserva 200', async (t) => {
-  const app = buildApp({
-    async classify() {
-      return { category: 'BUG' };
-    },
-  });
+  const app = buildApp(
+    dependencies({
+      async infer() {
+        return { type: 'classification', category: 'BUG' };
+      },
+    }),
+  );
   t.after(() => app.close());
   const r = await app.inject({
     method: 'POST',

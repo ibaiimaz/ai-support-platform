@@ -24,6 +24,10 @@ import {
 import { compareModels, compareModelFiles } from '../../src/evaluation/model-comparison/compare.js';
 import { project } from './helpers.js';
 import { latencySummary } from '../../src/evaluation/model-comparison/statistics.js';
+import { createClassificationDependencies } from '../../src/composition.js';
+import { OllamaClassificationLlm } from '../../src/infrastructure/ollama/ollama-classification-llm.js';
+import { SyntheticIncidentRepository } from '../../src/infrastructure/incidents/synthetic-incident-repository.js';
+import { toolCallingInstructions } from '../../src/infrastructure/ollama/tool-calling-instructions.js';
 
 test('I004-AC-01 I004-AC-02 fixtures desautorizados sin observaciones ni inferencias', async (t) => {
   const source = await loadManifest(process.cwd());
@@ -339,7 +343,7 @@ test('I004-AC-05 I004-AC-06 I004-AC-11 comparación por ID, errores, regresiones
   assert.deepEqual(fromFiles.pairs, comparison.pairs);
 });
 
-test('I004-AC-09 I004-AC-12 payload real del adaptador con fetch simulado y producción intacta', async (t) => {
+test('I004-AC-09 I004-AC-12 I006-AC-25 payload histórico intacto y composición productiva I006 separada', async (t) => {
   const f = await project(t);
   const payloads: Record<string, unknown>[] = [];
   t.mock.method(globalThis, 'fetch', async (_url: unknown, options?: RequestInit) => {
@@ -375,7 +379,16 @@ test('I004-AC-09 I004-AC-12 payload real del adaptador con fetch simulado y prod
     baseUrl: 'http://localhost:11434',
     timeoutMs: 30000,
   });
-  assert.ok((await readFile('src/main.ts', 'utf8')).includes('new OllamaClassifier(loadConfig())'));
+  const mainSource = await readFile('src/main.ts', 'utf8');
+  assert.ok(mainSource.includes("from './composition.js'"));
+  assert.ok(mainSource.includes('buildApp(createClassificationDependencies(loadConfig()), true)'));
+  assert.ok(!mainSource.includes('OllamaClassifier'));
+  const production = createClassificationDependencies(loadConfig({}));
+  assert.ok(production.llm instanceof OllamaClassificationLlm);
+  assert.ok(production.repository instanceof SyntheticIncidentRepository);
+  assert.equal(production.systemInstructions, toolCallingInstructions);
+  assert.notEqual(production.systemInstructions, classificationInstructions);
+  assert.equal(payloads.length, 6, 'composing I006 must not make additional requests');
   assert.equal(
     execFileSync('git', ['check-ignore', 'evals/reports/i004/example.json'], {
       encoding: 'utf8',

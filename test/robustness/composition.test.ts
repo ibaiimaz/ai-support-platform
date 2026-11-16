@@ -20,6 +20,8 @@ import { buildApp } from '../../src/http/app.js';
 import { runEvaluation } from '../../src/evaluation/run-evaluation.js';
 import { experimentProject, fixturePair } from './helpers.js';
 import { ollamaInference } from '../../src/infrastructure/ollama/inference-descriptor.js';
+import { createClassificationDependencies } from '../../src/composition.js';
+import { toolCallingInstructions } from '../../src/infrastructure/ollama/tool-calling-instructions.js';
 
 test('I003-AC-01 I003-AC-04 candidatos registrados y baseline inmutable', async () => {
   const { manifest } = await loadManifest(process.cwd());
@@ -78,21 +80,38 @@ test('I003-AC-05 validación candidata 60 casos y H2 sin coincidencias exactas',
   assert.equal(manifest.preparation.isolation, 'procedural');
 });
 
-test('I003-AC-02 I003-AC-03 I003-AC-13 candidato en evaluación no cambia HTTP original', async (t) => {
+test('I003-AC-02 I003-AC-03 I003-AC-13 I006-AC-25 candidato histórico no cambia la composición HTTP I006', async (t) => {
   const { root } = await experimentProject(t);
-  const payloads: { messages: { role: string; content: string }[] }[] = [];
+  const payloads: {
+    messages: { role: string; content: string }[];
+    model: string;
+    stream: boolean;
+    options: { temperature: number };
+    tools?: unknown;
+    format?: unknown;
+  }[] = [];
   t.mock.method(globalThis, 'fetch', async (_input: unknown, options?: RequestInit) => {
-    payloads.push(JSON.parse(String(options?.body)));
+    const payload = JSON.parse(String(options?.body));
+    payloads.push(payload);
+    const httpI006 = payload.messages[0]?.content === toolCallingInstructions;
     return new Response(
       JSON.stringify({
         done: true,
         done_reason: 'stop',
-        message: { role: 'assistant', content: '{"category":"BUG"}' },
+        message: {
+          role: 'assistant',
+          content: httpI006 ? '{"type":"classification","category":"BUG"}' : '{"category":"BUG"}',
+        },
       }),
     );
   });
   const control = await executeExperiment(root, 'development', 'i001-original', {});
   assert.equal(control.exitCode, 0, control.output);
+  assert.equal(payloads.length, 60);
+  assert.ok(
+    payloads.every((payload) => payload.messages[0]?.content === classificationInstructions),
+  );
+  assert.ok(payloads.every((payload) => !Object.hasOwn(payload, 'tools')));
   payloads.length = 0;
   const response = await executeExperiment(root, 'development', 'h2', {});
   assert.equal(response.exitCode, 0, response.output);
@@ -112,27 +131,35 @@ test('I003-AC-02 I003-AC-03 I003-AC-13 candidato en evaluación no cambia HTTP o
   );
   assert.equal(payloads.length, 60);
   const app = buildApp(
-    new OllamaClassifier({
-      baseUrl: 'http://localhost:11434',
+    createClassificationDependencies({
+      baseUrl: 'http://ollama.invalid:11434',
       model: 'llama3.1:8b',
-      timeoutMs: 30000,
     }),
   );
   t.after(() => app.close());
-  assert.equal(
-    (
-      await app.inject({
-        method: 'POST',
-        url: '/api/v1/incidents/classify',
-        payload: { description: 'Incidencia de prueba.' },
-      })
-    ).statusCode,
-    200,
-  );
-  assert.equal(payloads.at(-1)!.messages[0]!.content, classificationInstructions);
+  const httpResponse = await app.inject({
+    method: 'POST',
+    url: '/api/v1/incidents/classify',
+    payload: { description: 'Incidencia de prueba.' },
+  });
+  assert.equal(httpResponse.statusCode, 200);
+  assert.deepEqual(httpResponse.json(), { category: 'BUG' });
+  assert.equal(payloads.length, 61);
+  const httpPayload = payloads.at(-1)!;
+  assert.deepEqual(httpPayload.messages, [
+    { role: 'system', content: toolCallingInstructions },
+    { role: 'user', content: 'Incidencia de prueba.' },
+  ]);
+  assert.notEqual(httpPayload.messages[0]!.content, findPrompt('h2').text);
+  assert.equal(httpPayload.model, 'llama3.1:8b');
+  assert.equal(httpPayload.stream, false);
+  assert.deepEqual(httpPayload.options, { temperature: 0 });
+  assert.ok(Array.isArray(httpPayload.tools));
+  assert.equal(Object.hasOwn(httpPayload, 'format'), false);
   assert.equal(sha256(classificationInstructions), baselinePrompt.sha256);
   const source = await readFile('src/main.ts', 'utf8');
-  assert.ok(source.includes('new OllamaClassifier(loadConfig())'));
+  assert.ok(source.includes('buildApp(createClassificationDependencies(loadConfig()), true)'));
+  assert.ok(!source.includes('OllamaClassifier'));
 });
 
 test('I003-AC-03 informes históricos I002 conservan formato y validación', async (t) => {

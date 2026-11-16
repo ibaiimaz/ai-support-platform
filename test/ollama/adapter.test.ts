@@ -8,6 +8,8 @@ import {
 } from '../../src/application/classification-errors.js';
 import { categories } from '../../src/domain/classification.js';
 import { buildApp } from '../../src/http/app.js';
+import { createClassificationDependencies } from '../../src/composition.js';
+import { toolCallingInstructions } from '../../src/infrastructure/ollama/tool-calling-instructions.js';
 import { Writable } from 'node:stream';
 import { classificationInstructions } from '../../src/infrastructure/ollama/classification-instructions.js';
 
@@ -198,7 +200,11 @@ test('I001-AC-05 I001-AC-10 integración HTTP y adaptador sin filtrar contenidos
       body += chunk;
     });
     req.on('end', () =>
-      res.end(JSON.stringify(envelope('{"category":"FEATURE","secret":"RESPONSE_SECRET"}'))),
+      res.end(
+        JSON.stringify(
+          envelope('{"type":"classification","category":"FEATURE","secret":"RESPONSE_SECRET"}'),
+        ),
+      ),
     );
   });
   const stream = new Writable({
@@ -207,7 +213,10 @@ test('I001-AC-05 I001-AC-10 integración HTTP y adaptador sin filtrar contenidos
       callback();
     },
   });
-  const app = buildApp(adapter(providerUrl), { stream });
+  const app = buildApp(
+    createClassificationDependencies({ baseUrl: providerUrl, model: 'test-model' }),
+    { stream },
+  );
   t.after(() => app.close());
   const response = await app.inject({
     method: 'POST',
@@ -221,7 +230,12 @@ test('I001-AC-05 I001-AC-10 integración HTTP y adaptador sin filtrar contenidos
   assert.ok(logs.includes('invalid_response'));
   assert.ok(logs.includes('PROVIDER_ERROR'));
 
-  for (const marker of ['DESCRIPTION_SECRET', 'RESPONSE_SECRET', classificationInstructions]) {
+  for (const marker of [
+    'DESCRIPTION_SECRET',
+    'RESPONSE_SECRET',
+    classificationInstructions,
+    toolCallingInstructions,
+  ]) {
     assert.ok(!logs.includes(marker));
     assert.ok(!response.body.includes(marker));
   }
@@ -230,7 +244,7 @@ test('I001-AC-05 I001-AC-10 integración HTTP y adaptador sin filtrar contenidos
 test('I001-AC-09 I001-AC-12 API escucha sin Ollama disponible', async (t) => {
   const { url, instance } = await server(t, (_req, res) => res.end());
   await new Promise<void>((resolve) => instance.close(() => resolve()));
-  const app = buildApp(adapter(url));
+  const app = buildApp(createClassificationDependencies({ baseUrl: url, model: 'test-model' }));
   t.after(() => app.close());
   const address = await app.listen({ host: '127.0.0.1', port: 0 });
   const response = await fetch(address + '/api/v1/incidents/classify', {
@@ -356,7 +370,13 @@ test('I001-AC-10 I001-AC-14 error inesperado del adaptador llega a HTTP como 500
       callback();
     },
   });
-  const app = buildApp(adapter('http://localhost:11434'), { stream });
+  const app = buildApp(
+    createClassificationDependencies({
+      baseUrl: 'http://ollama.invalid:11434',
+      model: 'test-model',
+    }),
+    { stream },
+  );
   try {
     const response = await app.inject({
       method: 'POST',

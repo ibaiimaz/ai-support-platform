@@ -1,0 +1,16 @@
+import type { Config } from './config.js';
+import type { ToolCallingDependencies } from './application/classify-incident.js';
+import { SyntheticIncidentRepository } from './infrastructure/incidents/synthetic-incident-repository.js';
+import { OllamaClassificationLlm } from './infrastructure/ollama/ollama-classification-llm.js';
+import { toolCallingInstructions } from './infrastructure/ollama/tool-calling-instructions.js';
+
+export function createClassificationDependencies(
+  config: Pick<Config, 'baseUrl' | 'model'>,
+  request: typeof fetch = fetch,
+): ToolCallingDependencies {
+  return {
+    llm: new OllamaClassificationLlm({ baseUrl: config.baseUrl, model: config.model }, request),
+    repository: new SyntheticIncidentRepository(),
+    systemInstructions: toolCallingInstructions,
+  };
+}

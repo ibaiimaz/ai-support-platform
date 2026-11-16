@@ -1,5 +1,9 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ClassificationError } from '../application/classification-errors.js';
+import {
+  GlobalDeadlineExceededError,
+  InvalidToolCallError,
+} from '../application/tool-calling-errors.js';
 
 export function sendError(
   reply: FastifyReply,
@@ -18,7 +22,11 @@ export function registerErrors(app: FastifyInstance) {
   );
 
   app.setErrorHandler((error, request, reply) => {
-    if (error instanceof ClassificationError) {
+    if (
+      error instanceof ClassificationError ||
+      error instanceof InvalidToolCallError ||
+      error instanceof GlobalDeadlineExceededError
+    ) {
       request.log.warn({ providerCause: error.kind }, 'Provider failure');
       return sendError(
         reply,

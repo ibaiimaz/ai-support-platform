@@ -1,10 +1,10 @@
 import Fastify, { LogController, type FastifyServerOptions } from 'fastify';
-import type { IncidentClassifier } from '../application/incident-classifier.js';
+import type { ToolCallingDependencies } from '../application/classify-incident.js';
 import { registerClassifyRoute } from './classify-route.js';
 import { registerErrors } from './error-handler.js';
 
 export function buildApp(
-  classifier: IncidentClassifier,
+  dependencies: ToolCallingDependencies,
   logger: FastifyServerOptions['logger'] = false,
 ) {
   const app = Fastify({
@@ -26,7 +26,7 @@ export function buildApp(
   });
 
   registerErrors(app);
-  registerClassifyRoute(app, classifier);
+  registerClassifyRoute(app, dependencies);
 
   return app;
 }

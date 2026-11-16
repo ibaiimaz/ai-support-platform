@@ -1,10 +1,12 @@
 import type { FastifyInstance } from 'fastify';
-import type { IncidentClassifier } from '../application/incident-classifier.js';
-import { classifyIncident } from '../application/classify-incident.js';
+import {
+  classifyIncident,
+  type ToolCallingDependencies,
+} from '../application/classify-incident.js';
 import { inputSchema } from './schemas.js';
 import { sendError } from './error-handler.js';
 
-export function registerClassifyRoute(app: FastifyInstance, classifier: IncidentClassifier) {
+export function registerClassifyRoute(app: FastifyInstance, dependencies: ToolCallingDependencies) {
   app.post<{ Body: { description: string } }>(
     '/api/v1/incidents/classify',
     {
@@ -34,8 +36,28 @@ export function registerClassifyRoute(app: FastifyInstance, classifier: Incident
         );
       }
 
-      const result = await classifyIncident(classifier, description);
-      return { category: result.category };
+      const result = await classifyIncident(dependencies, description);
+      if (result.status === 'CLASSIFIED') {
+        return { category: result.category };
+      }
+
+      if (result.toolUnavailable) {
+        return sendError(
+          reply,
+          request,
+          503,
+          'CLASSIFICATION_UNAVAILABLE',
+          'No se pudo completar la clasificación.',
+        );
+      }
+
+      return sendError(
+        reply,
+        request,
+        422,
+        'INSUFFICIENT_CONTEXT',
+        'No hay contexto suficiente para clasificar la incidencia.',
+      );
     },
   );
 }

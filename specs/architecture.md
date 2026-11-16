@@ -139,3 +139,38 @@ aceptación, resultados, 15 criterios y referencias privadas sin modificar los s
 congelados. La mejora observada de Gemma es +13/90, con dos regresiones; dataset sintético,
 plantillas nativas distintas y recursos descriptivos limitan su interpretación. Verified no
 constituye autorización de despliegue ni selección automática de modelo.
+
+## Composición HTTP I006 — fase 5
+
+La composición productiva vigente sustituye el flujo HTTP histórico por I006. Las descripciones
+y cierres I001–I005 anteriores son antecedentes; sus artefactos, adaptadores y runners se
+conservan. Esta fase no marca I006 Verified ni aporta inferencias reales.
+
+`main.ts` carga la configuración y llama a `createClassificationDependencies()` en
+`src/composition.ts`. La factoría construye `OllamaClassificationLlm` con URL/modelo,
+`SyntheticIncidentRepository` sin indisponibilidades simuladas y el prompt independiente
+`tool-calling-instructions.ts`. `buildApp()` y la ruta reciben únicamente dependencias I006,
+sin una sobrecarga HTTP histórica. El caso de uso conserva temporalmente su firma histórica
+para los runners, que no se migran en esta fase; AC-24 sigue pendiente.
+
+El caso de uso coordina hasta dos inferencias y una herramienta, aplica límites constantes
+45/5/90 segundos con reloj monotónico y valida respuestas y solicitudes. Los mensajes del
+usuario y los resultados de herramienta son datos no confiables; se mantienen separados del
+sistema y los resultados se serializan con rol tool. `loadConfig()` conserva su validación
+histórica de `OLLAMA_TIMEOUT_MS`, pero solo URL/modelo se usan en la composición I006.
+
+HTTP mantiene entrada, ruta y respuesta exitosa `{category}`. Una abstención normal,
+incluida la posterior a NOT_FOUND, da 422 INSUFFICIENT_CONTEXT; después de UNAVAILABLE da
+503 CLASSIFICATION_UNAVAILABLE. Ambos resultados de herramienta permiten 200 si finalmente
+se clasifica. Fallos de proveedor/protocolo, solicitudes inválidas y deadline global dan
+502 PROVIDER_ERROR; errores inesperados dan 500 seguro. Se conserva el sobre I001 y los
+códigos de validación/ruta/tamaño/contenido. Los logs contienen solo metadatos y causas
+controladas, sin prompts, argumentos, descripciones, respuestas crudas ni excepciones completas.
+
+Las pruebas deterministas verifican composición, protocolo con fetch simulado, las cuatro
+combinaciones NOT_FOUND/UNAVAILABLE con clasificación/abstención, privacidad y regresiones.
+No demuestran compatibilidad con el modelo o servidor local ni eficacia semántica del prompt.
+La estrategia tools sin format en la primera llamada y schema sin tools en la segunda,
+la correlación real y la resistencia a prompt injection siguen pendientes de autorización
+y evaluación con Ollama real. La cancelación continúa siendo best effort. No se añaden
+frameworks, dependencias, dataset o evals I006 en esta fase.
