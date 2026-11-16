@@ -81,32 +81,37 @@ test('I006-AC-10 effective timers bound operations which never resolve or honor 
   }
 });
 
-test('I006-AC-10 simultaneous global and LLM deadlines choose global for either callback order', async (t) => {
+test('I006-AC-10 simultaneous global and individual deadlines choose global for LLM and tool in either callback order', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
-  for (const providerFirst of [true, false]) {
-    let time = 0;
-    const deadline = new ClassificationDeadline(() => time);
-    time = 45_000;
-    const started = deferred<void>();
-    const operation = deferred<void>();
-    const pending = deadline.run('llm', (budget) => {
-      assert.equal(budget, 45_000);
-      started.resolve();
-      return operation.promise;
-    });
-    const rejected = assert.rejects(pending, GlobalDeadlineExceededError);
-    await started.promise;
-    time = 90_000;
+  for (const kind of ['llm', 'tool'] as const) {
+    for (const operationFirst of [true, false]) {
+      let time = 0;
+      const deadline = new ClassificationDeadline(() => time);
+      const limit = kind === 'llm' ? 45_000 : 5_000;
+      time = 90_000 - limit;
+      const started = deferred<void>();
+      const operation = deferred<void>();
+      const pending = deadline.run(kind, (budget) => {
+        assert.equal(budget, limit);
+        started.resolve();
+        return operation.promise;
+      });
+      const rejected = assert.rejects(pending, GlobalDeadlineExceededError);
+      await started.promise;
+      time = 90_000;
+      const individualTimeout =
+        kind === 'llm' ? new ClassificationError('timeout') : new IncidentRepositoryError();
 
-    if (providerFirst) {
-      operation.reject(new ClassificationError('timeout'));
-      await rejected;
-      t.mock.timers.tick(45_000);
-    } else {
-      t.mock.timers.tick(45_000);
-      await rejected;
-      operation.reject(new ClassificationError('timeout'));
-      await Promise.resolve();
+      if (operationFirst) {
+        operation.reject(individualTimeout);
+        await rejected;
+        t.mock.timers.tick(limit);
+      } else {
+        t.mock.timers.tick(limit);
+        await rejected;
+        operation.reject(individualTimeout);
+        await Promise.resolve();
+      }
     }
   }
 });

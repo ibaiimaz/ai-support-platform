@@ -463,3 +463,50 @@ test('I006-AC-17 successful and invalid completed responses clear their timeout'
   assert.equal(signals.length, 2);
   assert.ok(signals.every((signal) => !signal.aborted));
 });
+
+test('I006-AC-10/17 a response arriving after request timeout has its body cancelled without retry or result replacement', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let started!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  let deliver!: (response: Response) => void;
+  let requests = 0;
+  let signal: AbortSignal | null | undefined;
+  const adapter = new OllamaClassificationLlm(config, async (_url, options) => {
+    requests += 1;
+    signal = options?.signal;
+    started();
+    return new Promise<Response>((resolve) => {
+      deliver = resolve;
+    });
+  });
+  const pending = adapter.infer([], { timeoutMs: 100, toolsEnabled: true });
+  let timeoutError: unknown;
+  const rejected = assert.rejects(pending, (error) => {
+    assert.ok(error instanceof ClassificationError);
+    assert.equal(error.kind, 'timeout');
+    timeoutError = error;
+    return true;
+  });
+  await ready;
+  t.mock.timers.tick(100);
+  await rejected;
+  assert.equal(signal?.aborted, true);
+  let cancelled = false;
+  deliver(
+    new Response(
+      new ReadableStream({
+        cancel() {
+          cancelled = true;
+          return new Promise<void>(() => {});
+        },
+      }),
+    ),
+  );
+  // A full event-loop turn drains the late response's promise handlers without a timed wait.
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(cancelled, true);
+  assert.equal(requests, 1);
+  await assert.rejects(pending, (error) => error === timeoutError);
+});

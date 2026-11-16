@@ -354,6 +354,56 @@ test('I006-AC-09/10 a hanging first inference times out without tool or second i
   assert.equal(state.queries.length, 0);
 });
 
+test('I006-AC-09/10 an individual second-inference timeout stops the flow despite late classification or tool requests', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const lateResponses: LlmResponse[] = [
+    { type: 'classification', category: 'BUG' },
+    { type: 'tool_calls', calls: [call] },
+  ];
+  for (const late of lateResponses) {
+    let time = 0;
+    let started!: () => void;
+    const ready = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    let finish!: (response: LlmResponse) => void;
+    const state = fixture([{ type: 'tool_calls', calls: [call] }]);
+    state.dependencies.now = () => time;
+    const infer = state.dependencies.llm.infer;
+    state.dependencies.llm.infer = async (messages, options) => {
+      if (state.inferences.length === 0) {
+        return infer(messages, options);
+      }
+
+      assert.deepEqual(options, { timeoutMs: 45_000, toolsEnabled: false });
+      state.inferences.push({ messages: structuredClone(messages), options: { ...options } });
+      started();
+      return new Promise<LlmResponse>((resolve) => {
+        finish = resolve;
+      });
+    };
+    const pending = classifyIncident(state.dependencies, 'incident');
+    let timeoutError: unknown;
+    const rejected = assert.rejects(pending, (error) => {
+      assert.ok(error instanceof ClassificationError);
+      assert.equal(error.kind, 'timeout');
+      assert.equal(error instanceof GlobalDeadlineExceededError, false);
+      timeoutError = error;
+      return true;
+    });
+    await ready;
+    time = 45_000;
+    t.mock.timers.tick(45_000);
+    await rejected;
+    assert.ok(time < 90_000, 'the global budget has not expired');
+    finish(late);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    await assert.rejects(pending, (error) => error === timeoutError);
+    assert.equal(state.inferences.length, 2);
+    assert.equal(state.queries.length, 1);
+  }
+});
+
 test('I006-AC-10 global exhaustion after a tool prevents the second inference and cannot become UNAVAILABLE', async () => {
   let time = 0;
   const state = fixture([{ type: 'tool_calls', calls: [call] }]);

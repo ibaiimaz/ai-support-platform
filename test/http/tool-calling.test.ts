@@ -169,6 +169,31 @@ test('I006-AC-04/15/25 FOUND supplies context but the final LLM category determi
   assert.deepEqual(state.counts(), { inferences: 2, queries: 1 });
 });
 
+test('I006-AC-04/15 FOUND followed by abstention returns 422 without marking the tool unavailable', async (t) => {
+  const state = fixture([
+    {
+      type: 'tool_calls',
+      calls: [{ name: 'getIncidentById', arguments: { incidentId: 'INC-142' } }],
+    },
+    { type: 'abstention' },
+  ]);
+  const app = buildApp(state.dependencies);
+  t.after(() => app.close());
+  const result = await app.inject({
+    method: 'POST',
+    url,
+    payload: { description: 'Me pasa lo mismo que en INC-142.' },
+  });
+
+  assert.equal(result.statusCode, 422);
+  assertError(
+    result.json(),
+    'INSUFFICIENT_CONTEXT',
+    'No hay contexto suficiente para clasificar la incidencia.',
+  );
+  assert.deepEqual(state.counts(), { inferences: 2, queries: 1 });
+});
+
 test('I006-AC-08/09/15 malformed and prohibited requests become generic 502 without recovery', async (t) => {
   const call = { name: 'getIncidentById', arguments: { incidentId: 'INC-142' } };
   for (const response of [
