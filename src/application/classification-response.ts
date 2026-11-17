@@ -22,7 +22,7 @@ function hasKeys(
 
 export function assertLlmResponse(value: unknown): asserts value is LlmResponse {
   if (!isObject(value)) {
-    throw new ClassificationError('invalid_response');
+    throw new ClassificationError('invalid_response', 'INTERNAL_RESPONSE_INVALID');
   }
 
   if (value.type === 'classification') {
@@ -30,7 +30,7 @@ export function assertLlmResponse(value: unknown): asserts value is LlmResponse 
       !hasKeys(value, ['type', 'category']) ||
       !categories.some((category) => category === value.category)
     ) {
-      throw new ClassificationError('invalid_response');
+      throw new ClassificationError('invalid_response', 'INTERNAL_RESPONSE_INVALID');
     }
 
     return;
@@ -38,7 +38,7 @@ export function assertLlmResponse(value: unknown): asserts value is LlmResponse 
 
   if (value.type === 'abstention') {
     if (!hasKeys(value, ['type'])) {
-      throw new ClassificationError('invalid_response');
+      throw new ClassificationError('invalid_response', 'INTERNAL_RESPONSE_INVALID');
     }
 
     return;
@@ -56,7 +56,7 @@ export function assertLlmResponse(value: unknown): asserts value is LlmResponse 
         typeof call.name !== 'string' ||
         (Object.hasOwn(call, 'callId') && typeof call.callId !== 'string')
       ) {
-        throw new ClassificationError('invalid_response');
+        throw new ClassificationError('invalid_response', 'INTERNAL_RESPONSE_INVALID');
       }
     }
 
@@ -64,7 +64,7 @@ export function assertLlmResponse(value: unknown): asserts value is LlmResponse 
     return;
   }
 
-  throw new ClassificationError('invalid_response');
+  throw new ClassificationError('invalid_response', 'INTERNAL_RESPONSE_INVALID');
 }
 
 export function classificationResult(

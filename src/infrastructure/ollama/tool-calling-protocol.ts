@@ -1,6 +1,9 @@
 import { Ajv } from 'ajv';
 import { categories } from '../../domain/classification.js';
-import { ClassificationError } from '../../application/classification-errors.js';
+import {
+  ClassificationError,
+  type InvalidResponseDiagnostic,
+} from '../../application/classification-errors.js';
 import type { LlmMessage, LlmResponse, ToolCall } from '../../application/classification-llm.js';
 
 export const toolCallingFinalSchema = {
@@ -54,12 +57,12 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function parseJson(text: string): unknown {
+function parseJson(text: string, diagnostic: InvalidResponseDiagnostic): unknown {
   try {
     return JSON.parse(text);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      throw new ClassificationError('invalid_response');
+      throw new ClassificationError('invalid_response', diagnostic);
     }
 
     throw error;
@@ -101,7 +104,7 @@ function readToolCall(value: unknown): ToolCall {
     typeof value.function.name !== 'string' ||
     !Object.hasOwn(value.function, 'arguments')
   ) {
-    throw new ClassificationError('invalid_response');
+    throw new ClassificationError('invalid_response', 'TOOL_CALL_STRUCTURE_INVALID');
   }
 
   return {
@@ -112,24 +115,22 @@ function readToolCall(value: unknown): ToolCall {
 }
 
 export function parseToolCallingResponse(text: string): LlmResponse {
-  const envelope = parseJson(text);
-  if (
-    !isObject(envelope) ||
-    envelope.done !== true ||
-    envelope.done_reason !== 'stop' ||
-    !isObject(envelope.message) ||
-    envelope.message.role !== 'assistant'
-  ) {
-    throw new ClassificationError('invalid_response');
+  const envelope = parseJson(text, 'ENVELOPE_JSON_INVALID');
+  if (!isObject(envelope) || !isObject(envelope.message) || envelope.message.role !== 'assistant') {
+    throw new ClassificationError('invalid_response', 'ENVELOPE_INVALID');
+  }
+
+  if (envelope.done !== true || envelope.done_reason !== 'stop') {
+    throw new ClassificationError('invalid_response', 'TERMINATION_INVALID');
   }
 
   const message = envelope.message;
   if (Object.hasOwn(message, 'tool_calls')) {
-    if (
-      !Array.isArray(message.tool_calls) ||
-      (Object.hasOwn(message, 'content') && message.content !== '')
-    ) {
-      throw new ClassificationError('invalid_response');
+    if (!Array.isArray(message.tool_calls)) {
+      throw new ClassificationError('invalid_response', 'TOOL_CALL_STRUCTURE_INVALID');
+    }
+    if (Object.hasOwn(message, 'content') && message.content !== '') {
+      throw new ClassificationError('invalid_response', 'MIXED_CONTENT_AND_TOOLS');
     }
 
     // Preserve every request, even an empty list, for application-level authorization.
@@ -137,12 +138,12 @@ export function parseToolCallingResponse(text: string): LlmResponse {
   }
 
   if (typeof message.content !== 'string') {
-    throw new ClassificationError('invalid_response');
+    throw new ClassificationError('invalid_response', 'FINAL_CONTENT_INVALID');
   }
 
-  const result = parseJson(message.content);
+  const result = parseJson(message.content, 'FINAL_JSON_INVALID');
   if (!validateFinal(result)) {
-    throw new ClassificationError('invalid_response');
+    throw new ClassificationError('invalid_response', 'FINAL_SCHEMA_INVALID');
   }
 
   return result;

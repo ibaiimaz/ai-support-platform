@@ -111,7 +111,7 @@ export async function postToolCallingChat(
 
     const reader = response.body?.getReader();
     if (!reader) {
-      throw new ClassificationError('invalid_response');
+      throw new ClassificationError('invalid_response', 'RESPONSE_BODY_MISSING');
     }
 
     const chunks: Uint8Array[] = [];
@@ -127,7 +127,7 @@ export async function postToolCallingChat(
 
         size += value.byteLength;
         if (size > 65_536) {
-          throw new ClassificationError('invalid_response');
+          throw new ClassificationError('invalid_response', 'RESPONSE_TOO_LARGE');
         }
 
         chunks.push(value);

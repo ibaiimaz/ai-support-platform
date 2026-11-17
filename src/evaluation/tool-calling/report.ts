@@ -1,3 +1,4 @@
+import { invalidResponseDiagnostics } from '../../application/classification-errors.js';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { Ajv } from 'ajv';
@@ -8,56 +9,63 @@ import type { CaseResult, EvaluationDataset, EvaluationReport, RunIdentity } fro
 
 const count = { type: 'integer', minimum: 0 };
 const nullableBoolean = { type: ['boolean', 'null'] };
-const object = (properties: Record<string, unknown>) => ({
+const object = (properties: Record<string, unknown>, optional: string[] = []) => ({
   type: 'object',
   additionalProperties: false,
-  required: Object.keys(properties),
+  required: Object.keys(properties).filter((key) => !optional.includes(key)),
   properties,
 });
 const validateResult = new Ajv({ strictTypes: false }).compile<CaseResult>(
-  object({
-    id: { type: 'string', pattern: '^I006-[0-9]{3}$' },
-    outcome: { enum: ['COMPLETED', 'POLICY_VIOLATION', 'TECHNICAL_ERROR'] },
-    observation: object({
-      toolRequested: nullableBoolean,
-      toolRequestValid: nullableBoolean,
-      toolExecuted: { type: 'boolean' },
-      toolOutcome: { enum: [null, 'FOUND', 'NOT_FOUND', 'UNAVAILABLE'] },
-      toolDecisionCorrect: nullableBoolean,
-      requestCount: count,
-      executionCount: { ...count, maximum: 1 },
-      inferenceCount: { ...count, maximum: 2 },
-      requestedIds: { type: 'array', items: { type: 'string', pattern: '^INC-[1-9][0-9]{0,5}$' } },
-      violations: { type: 'array', items: { const: 'INVALID_MULTIPLE_OR_ADDITIONAL_REQUEST' } },
-    }),
-    final: {
-      anyOf: [
-        object({
-          status: { const: 'CLASSIFIED' },
-          category: { enum: ['BUG', 'FEATURE', 'QUESTION'] },
-        }),
-        object({
-          status: { const: 'INSUFFICIENT_CONTEXT' },
-          category: { type: 'null' },
-          toolUnavailable: { type: 'boolean' },
-        }),
-        { type: 'null' },
-      ],
+  object(
+    {
+      diagnostic: { enum: [...invalidResponseDiagnostics] },
+      id: { type: 'string', pattern: '^I006-[0-9]{3}$' },
+      outcome: { enum: ['COMPLETED', 'POLICY_VIOLATION', 'TECHNICAL_ERROR'] },
+      observation: object({
+        toolRequested: nullableBoolean,
+        toolRequestValid: nullableBoolean,
+        toolExecuted: { type: 'boolean' },
+        toolOutcome: { enum: [null, 'FOUND', 'NOT_FOUND', 'UNAVAILABLE'] },
+        toolDecisionCorrect: nullableBoolean,
+        requestCount: count,
+        executionCount: { ...count, maximum: 1 },
+        inferenceCount: { ...count, maximum: 2 },
+        requestedIds: {
+          type: 'array',
+          items: { type: 'string', pattern: '^INC-[1-9][0-9]{0,5}$' },
+        },
+        violations: { type: 'array', items: { const: 'INVALID_MULTIPLE_OR_ADDITIONAL_REQUEST' } },
+      }),
+      final: {
+        anyOf: [
+          object({
+            status: { const: 'CLASSIFIED' },
+            category: { enum: ['BUG', 'FEATURE', 'QUESTION'] },
+          }),
+          object({
+            status: { const: 'INSUFFICIENT_CONTEXT' },
+            category: { type: 'null' },
+            toolUnavailable: { type: 'boolean' },
+          }),
+          { type: 'null' },
+        ],
+      },
+      error: {
+        enum: [
+          null,
+          'invalid_tool_call',
+          'timeout',
+          'connection_error',
+          'http_error',
+          'invalid_response',
+          'global_deadline_exceeded',
+          'unexpected_error',
+        ],
+      },
+      latencyMs: { type: 'number', minimum: 0 },
     },
-    error: {
-      enum: [
-        null,
-        'invalid_tool_call',
-        'timeout',
-        'connection_error',
-        'http_error',
-        'invalid_response',
-        'global_deadline_exceeded',
-        'unexpected_error',
-      ],
-    },
-    latencyMs: { type: 'number', minimum: 0 },
-  }),
+    ['diagnostic'],
+  ),
 );
 
 export function buildReport(
@@ -70,6 +78,8 @@ export function buildReport(
   for (const result of results) {
     if (
       !validateResult(result) ||
+      (result.diagnostic !== undefined &&
+        (result.error !== 'invalid_response' || result.outcome !== 'TECHNICAL_ERROR')) ||
       (result.outcome === 'COMPLETED') !== (result.final !== null) ||
       (result.outcome === 'COMPLETED') !== (result.error === null) ||
       (result.outcome === 'TECHNICAL_ERROR') !== (result.observation.toolDecisionCorrect === null)

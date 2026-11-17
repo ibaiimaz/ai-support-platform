@@ -2,7 +2,10 @@ import {
   classifyIncident,
   type ToolCallingDependencies,
 } from '../../application/classify-incident.js';
-import { ClassificationError } from '../../application/classification-errors.js';
+import {
+  ClassificationError,
+  isInvalidResponseDiagnostic,
+} from '../../application/classification-errors.js';
 import {
   GlobalDeadlineExceededError,
   InvalidToolCallError,
@@ -33,6 +36,7 @@ export async function runEvaluation(
     const start = now();
     let final: CaseResult['final'] = null;
     let error: CaseResult['error'] = null;
+    let diagnostic: CaseResult['diagnostic'];
     let outcome: CaseResult['outcome'] = 'COMPLETED';
     try {
       final = await classifyIncident(observed.dependencies, example.description);
@@ -41,6 +45,13 @@ export async function runEvaluation(
         outcome = 'POLICY_VIOLATION';
         error = 'invalid_tool_call';
       } else {
+        if (
+          cause instanceof ClassificationError &&
+          cause.kind === 'invalid_response' &&
+          isInvalidResponseDiagnostic(cause.diagnostic)
+        ) {
+          diagnostic = cause.diagnostic;
+        }
         outcome = 'TECHNICAL_ERROR';
         error =
           cause instanceof ClassificationError || cause instanceof GlobalDeadlineExceededError
@@ -54,6 +65,7 @@ export async function runEvaluation(
       observation: observed.close(outcome !== 'TECHNICAL_ERROR'),
       final,
       error,
+      ...(diagnostic !== undefined ? { diagnostic } : {}),
       latencyMs: Math.max(0, now() - start),
     };
     await control.record(result);

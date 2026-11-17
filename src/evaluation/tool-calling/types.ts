@@ -1,3 +1,4 @@
+import type { InvalidResponseDiagnostic } from '../../application/classification-errors.js';
 import type { Category } from '../../domain/classification.js';
 import type { Incident } from '../../domain/incident.js';
 import type { ClassificationResult } from '../../application/classification-result.js';
@@ -67,6 +68,7 @@ export interface CaseResult {
   observation: Observation;
   final: ClassificationResult | null;
   error: string | null;
+  diagnostic?: InvalidResponseDiagnostic;
   latencyMs: number;
 }
 
