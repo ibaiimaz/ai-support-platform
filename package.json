@@ -17,7 +17,8 @@
     "eval:independent": "node dist/src/evaluation/independent-validation/launch.js",
     "eval:tool-calling": "node dist/src/evaluation/tool-calling/main.js",
     "smoke:i006": "node dist/src/diagnostics/i006-smoke-main.js",
-    "diagnose:i006-first-inference": "node dist/src/diagnostics/i006-first-inference-main.js"
+    "diagnose:i006-first-inference": "node dist/src/diagnostics/i006-first-inference-main.js",
+    "diagnose:i006-tools-format": "node dist/src/diagnostics/i006-tools-format-main.js"
   },
   "dependencies": {
     "ajv": "8.20.0",
