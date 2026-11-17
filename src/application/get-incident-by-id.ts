@@ -16,7 +16,7 @@ export type IncidentToolResult =
       status: 'UNAVAILABLE';
     };
 
-function readIncidentId(call: ToolCall): string {
+export function readIncidentId(call: ToolCall): string {
   if (
     call.name !== 'getIncidentById' ||
     typeof call.arguments !== 'object' ||
