@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "recordType": "HISTORICAL_DIAGNOSTIC_SUMMARY",
+  "operationalAuthorization": false,
+  "caseId": "I006-SMOKE-INC-142",
+  "approvalReference": "I006-SMOKE-RUN-2026-11-17",
+  "runId": "36a12f6d-a1a8-47d5-8242-1e36d90f6dc1",
+  "closedOn": "2026-11-17",
+  "startedAt": "2026-11-17T10:29:37.990Z",
+  "finishedAt": "2026-11-17T10:29:44.611Z",
+  "identity": {
+    "caseId": "I006-SMOKE-INC-142",
+    "scenarioHash": "aa3498e91efd8962efe4e44519a77aa31f5734be11fa3cc7f8d518d9ffe03870",
+    "promptHash": "0f564a0403fe1f6ef24a3904f7efe1f6cef5869067b379a0f3381ff59fb487fc",
+    "protocolHash": "61103b95a66abc519d3ce1c2b69dc28b722c82b6b394c34f2eec93417d5cb0a1",
+    "baseUrl": "http://localhost:11434",
+    "model": "llama3.1:8b",
+    "modelDigest": "46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e",
+    "ollamaVersion": "0.40.14",
+    "modelMetadataHash": "c8a0cdf49e77e04d8e87a5ae8973f008d1ec0ecd6481e26af18649d46327eec8",
+    "temperature": 0,
+    "timeouts": {
+      "llmCallMs": 45000,
+      "toolCallMs": 5000,
+      "overallMs": 90000
+    },
+    "maximumAttempts": 2,
+    "code": {
+      "commit": "git:70c6b58bbd7c0a886c68594ad6037908add2ded4",
+      "method": "typescript_emit_exact",
+      "compilerVersion": "5.9.3",
+      "sourceSha256": "0b07c34f7dd050338dac23e0a96248f90fe11de4cacd069632901e686aa67c0d",
+      "buildSha256": "0b824e91d4e4c8e1e6c68a467f6d52beb152845870da5df9275f25825c01ed8e"
+    }
+  },
+  "identityHash": "a478a04d42b5bb01fed9428936f4d8ce1c81e924991d44c8f9bd69354f9db103",
+  "executionSourceState": "UNCOMMITTED_IMPLEMENTATION_WITH_RECORDED_SOURCE_AND_BUILD_HASHES",
+  "technicalStatus": "VALID_OBSERVED",
+  "scenarioStatus": "PASSED",
+  "operationalStatus": "OK",
+  "reason": "EXPECTED_PATH",
+  "firstResponse": "tool_calls",
+  "secondResponse": "classification",
+  "tool": {
+    "expectedName": "getIncidentById",
+    "expectedIncidentId": "INC-142",
+    "expectedRequestMatched": true,
+    "executions": 1,
+    "outcome": "FOUND"
+  },
+  "final": {
+    "status": "CLASSIFIED",
+    "category": "BUG"
+  },
+  "accounting": {
+    "scope": "I006_SMOKE_COMPATIBILITY",
+    "maximumAttempts": 2,
+    "reservedAttempts": 2,
+    "dispatchesObserved": 2,
+    "validatedResponses": 2,
+    "notDispatched": 0,
+    "uncertainDispatches": 0,
+    "experimentalBudgetTouched": false,
+    "maximumExperimentalAttempts": 120,
+    "maximumCombinedAttempts": 122
+  },
+  "retries": 0,
+  "errors": 0,
+  "caseDurationMs": 6601.453667,
+  "privateReport": {
+    "path": "evals/reports/i006-smoke/report.json",
+    "sha256": "8ea32c27484a6cbcaf545ba741f580a6643caa6f36b40f8a20da022f30237618"
+  },
+  "conclusionScope": "ONE_COMPATIBILITY_SCENARIO_ONLY_NOT_DATASET_ACCEPTANCE"
+}
