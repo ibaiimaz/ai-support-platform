@@ -1,5 +1,4 @@
 import { performance } from 'node:perf_hooks';
-import { classifyIncident } from '../application/classify-incident.js';
 import { ClassificationError } from '../application/classification-errors.js';
 import type { IncidentClassifier } from '../application/incident-classifier.js';
 import type { EvaluationExample, EvaluationResult, EvaluationRun } from './types.js';
@@ -23,7 +22,7 @@ export async function runEvaluation(
     };
 
     try {
-      const classification = await classifyIncident(classifier, example.description.trim());
+      const classification = await classifier.classify(example.description.trim());
 
       results.push({
         ...reference,

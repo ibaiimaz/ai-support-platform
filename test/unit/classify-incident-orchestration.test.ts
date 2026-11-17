@@ -5,6 +5,7 @@ import {
   type ToolCallingDependencies,
 } from '../../src/application/classify-incident.js';
 import type { Classification, Category } from '../../src/domain/classification.js';
+import type { IncidentClassifier } from '../../src/application/incident-classifier.js';
 import type { Incident } from '../../src/domain/incident.js';
 import type {
   LlmMessage,
@@ -475,31 +476,14 @@ test('I006-AC-09/10 the second inference expires globally with either timer or p
   }
 });
 
-test('I006-AC-16/18 temporary historical overload preserves promise identity, text and synchronous errors', async () => {
-  const expected: Classification = { category: 'FEATURE' };
-  const providerPromise = Promise.resolve(expected);
-  const result = classifyIncident(
-    {
-      classify(description) {
-        assert.equal(description, '  unchanged description  ');
-        return providerPromise;
-      },
-    },
-    '  unchanged description  ',
-  );
-  assert.equal(result, providerPromise);
-  assert.equal(await result, expected);
-  const error = new TypeError('historical synchronous failure');
-  assert.throws(
-    () =>
-      classifyIncident(
-        {
-          classify() {
-            throw error;
-          },
-        },
-        'incident',
-      ),
-    (caught) => caught === error,
-  );
+test('I006-AC-24 classifyIncident no longer accepts the historical classifier signature', () => {
+  type HistoricalSignature = (
+    classifier: IncidentClassifier,
+    description: string,
+  ) => Promise<Classification>;
+
+  // @ts-expect-error AC-24: accepting the historical signature would regress the separation.
+  const historicalSignature: HistoricalSignature = classifyIncident;
+  // The assignment only checks types; the historical signature is never invoked.
+  assert.equal(historicalSignature, classifyIncident);
 });

@@ -150,8 +150,19 @@ conservan. Esta fase no marca I006 Verified ni aporta inferencias reales.
 `src/composition.ts`. La factoría construye `OllamaClassificationLlm` con URL/modelo,
 `SyntheticIncidentRepository` sin indisponibilidades simuladas y el prompt independiente
 `tool-calling-instructions.ts`. `buildApp()` y la ruta reciben únicamente dependencias I006,
-sin una sobrecarga HTTP histórica. El caso de uso conserva temporalmente su firma histórica
-para los runners, que no se migran en esta fase; AC-24 sigue pendiente.
+sin una sobrecarga HTTP histórica. Tras la migración de AC-24 en la fase 8, el caso de uso
+acepta exclusivamente `ToolCallingDependencies` y devuelve `ClassificationResult`; ya no
+contiene sobrecargas ni detección dinámica del clasificador histórico. Su cuerpo de
+orquestación se conserva.
+
+I002–I005 comparten `src/evaluation/run-evaluation.ts`, que invoca directamente
+`classifier.classify(example.description.trim())`. Se conservan el contexto del método y
+la normalización histórica en ese runner. Las cuatro entradas de evaluación, el puerto
+`IncidentClassifier`, `OllamaClassifier`, los prompts, esquemas, modelos, temperaturas,
+timeouts y políticas de errores, concurrencia y reintentos permanecen sin cambios. HTTP y
+el runner I006 siguen utilizando exclusivamente la orquestación `classifyIncident()`.
+La reproducción histórica conserva el procedimiento; no garantiza respuestas idénticas
+del modelo real ni implica repetir inferencias para verificar esta migración.
 
 El caso de uso coordina hasta dos inferencias y una herramienta, aplica límites constantes
 45/5/90 segundos con reloj monotónico y valida respuestas y solicitudes. Los mensajes del

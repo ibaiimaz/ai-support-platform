@@ -93,3 +93,64 @@ test('I002-AC-10 I002-AC-11 excepción inesperada detiene y no filtra el error',
   assert.ok(!JSON.stringify(run).includes('DESCRIPTION_SECRET'));
   assert.ok(!JSON.stringify(run).includes('REFERENCE_SECRET'));
 });
+
+test('I006-AC-18/24 historical direct invocation preserves method context, one argument and provider result', async () => {
+  const example = {
+    ...fixtureDataset().examples[0]!,
+    description: '  unchanged description  ',
+    expectedCategory: 'FEATURE' as const,
+  };
+  const expected = { category: 'FEATURE' as const };
+  const providerPromise = Promise.resolve(expected);
+  let methodReads = 0;
+  let calls = 0;
+  const classifier = {
+    get classify() {
+      methodReads++;
+      return function (this: unknown, ...args: string[]) {
+        calls++;
+        assert.equal(this, classifier);
+        assert.deepEqual(args, ['unchanged description']);
+        return providerPromise;
+      };
+    },
+  };
+  const run = await runEvaluation([example], classifier);
+  assert.equal(methodReads, 1);
+  assert.equal(calls, 1);
+  assert.equal(await providerPromise, expected);
+  assert.equal(run.complete, true);
+  assert.deepEqual(
+    run.results.map((result) => result.status === 'correct' && result.predictedCategory),
+    ['FEATURE'],
+  );
+});
+
+test('I006-AC-18/24 synchronous and asynchronous historical errors keep continuation and stopping policies', async () => {
+  for (const asynchronous of [false, true]) {
+    for (const error of [new ClassificationError('timeout'), new TypeError('HISTORICAL_SECRET')]) {
+      let calls = 0;
+      const run = await runEvaluation(fixtureDataset().examples.slice(0, 2), {
+        classify() {
+          calls++;
+          if (asynchronous) {
+            return Promise.reject(error);
+          }
+          throw error;
+        },
+      });
+      const known = error instanceof ClassificationError;
+      assert.equal(calls, known ? 2 : 1);
+      assert.equal(run.complete, known);
+      assert.equal(run.termination, known ? null : 'unexpected_error');
+      assert.ok(
+        run.results.every(
+          (result) =>
+            result.status === 'error' &&
+            result.errorKind === (known ? 'timeout' : 'unexpected_error'),
+        ),
+      );
+      assert.equal(JSON.stringify(run).includes('HISTORICAL_SECRET'), false);
+    }
+  }
+});

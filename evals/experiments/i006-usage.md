@@ -157,4 +157,14 @@ Códigos CLI: 0 para validación/identidad/inicialización satisfactorias o COMP
 | AC-23    | Puertas y estados independientes                             | Puerta experimental y aceptación humana   |
 | AC-26    | Runner sobre caso de uso real, informes saneados separados   | Informes reales                           |
 
-AC-24 no se modifica en esta fase. I002–I005 conservan sus archivos y procedimientos históricos. Las pruebas con proveedores simulados no demuestran compatibilidad real de tools/format ni resistencia semántica a instrucciones maliciosas.
+Durante la fase 7, AC-24 permaneció pendiente. Su cierre determinista se registra a continuación. Las pruebas con proveedores simulados no demuestran compatibilidad real de tools/format ni resistencia semántica a instrucciones maliciosas.
+
+## Cierre de AC-24 — fase 8
+
+**AC-24 cumplido mediante verificación determinista — 2026-11-17.** Este bloque no marca I006 Verified ni autoriza el siguiente bloque de la fase 8.
+
+I002–I005 comparten `src/evaluation/run-evaluation.ts`, que ahora invoca directamente `classifier.classify(example.description.trim())`, conservando el contexto del método. Se elimina la sobrecarga temporal de `classifyIncident()` y la detección dinámica de dependencias; el cuerpo de la orquestación I006 permanece idéntico. HTTP y el runner I006 continúan usando exclusivamente esa orquestación.
+
+Se mantienen `IncidentClassifier`, `OllamaClassifier`, las cuatro entradas históricas, prompts, esquemas, modelos, temperaturas, timeouts, normalización, concurrencia, ausencia de reintentos y políticas de errores. Las garantías pertinentes del test temporal se trasladan al runner histórico; el test de tipos rechaza la antigua firma de `classifyIncident()`. La reproducción histórica conserva el procedimiento, sin garantizar respuestas idénticas del modelo real.
+
+Verificaciones: compilación TypeScript estricta; 71 tests afectados satisfactorios; `npm run verify` con **259/259 tests**, incluidos I002–I005, composición, HTTP, orquestación y evaluador I006. Las pruebas utilizan proveedores simulados. El dataset congelado conserva el SHA-256 registrado arriba; manifiestos, permisos y evidencias históricas no se modifican. No se ejecuta Ollama real ni se crea ledger experimental.

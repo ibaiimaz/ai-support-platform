@@ -1,7 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadConfig } from '../../src/config.js';
-import { classifyIncident } from '../../src/application/classify-incident.js';
+import {
+  classifyIncident,
+  type ToolCallingDependencies,
+} from '../../src/application/classify-incident.js';
 import { ClassificationError } from '../../src/application/classification-errors.js';
 
 test('I001-AC-09 configuración válida, valores iniciales e inválidos', () => {
@@ -30,29 +33,35 @@ test('I001-AC-09 configuración válida, valores iniciales e inválidos', () => 
   assert.throws(() => loadConfig({ OLLAMA_MODEL: '  ' }));
 });
 
-test('I001-AC-11 caso de uso independiente y propagación de errores', async () => {
-  assert.deepEqual(
-    await classifyIncident(
-      {
-        async classify(description) {
-          assert.equal(description, 'text');
-          return { category: 'FEATURE' };
-        },
+test('I001-AC-11 I006-AC-14/24 caso de uso I006 independiente y propagación de errores', async () => {
+  let calls = 0;
+  const dependencies: ToolCallingDependencies = {
+    systemInstructions: 'Classification test instructions',
+    repository: {
+      async getById() {
+        assert.fail('A direct classification must not access the repository');
       },
-      'text',
-    ),
-    { category: 'FEATURE' },
-  );
+    },
+    llm: {
+      async infer(messages, options) {
+        calls++;
+        assert.deepEqual(messages, [
+          { role: 'system', content: 'Classification test instructions' },
+          { role: 'user', content: 'text' },
+        ]);
+        assert.equal(options.toolsEnabled, true);
+        return { type: 'classification', category: 'FEATURE' };
+      },
+    },
+  };
+  assert.deepEqual(await classifyIncident(dependencies, 'text'), {
+    status: 'CLASSIFIED',
+    category: 'FEATURE',
+  });
+  assert.equal(calls, 1);
   const error = new ClassificationError('timeout');
-  await assert.rejects(
-    classifyIncident(
-      {
-        async classify() {
-          throw error;
-        },
-      },
-      'text',
-    ),
-    (e) => e === error,
-  );
+  dependencies.llm.infer = async () => {
+    throw error;
+  };
+  await assert.rejects(classifyIncident(dependencies, 'text'), (caught) => caught === error);
 });

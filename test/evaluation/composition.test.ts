@@ -141,7 +141,10 @@ test('I002-AC-12 I002-AC-13 ejecuci√≥n determinista separada de HTTP y evaluaci√
   const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
   assert.ok(!main.includes('../http/'));
   assert.ok(!main.includes('../main.js'));
-  assert.ok(runner.includes('classifyIncident('));
+  assert.ok(runner.includes('await classifier.classify(example.description.trim())'));
+  assert.ok(!runner.includes('classify-incident.js'));
+  assert.ok(!runner.includes('classifyIncident'));
+  assert.ok(!runner.includes('classifyDirectly'));
   assert.ok(!packageJson.scripts.test.includes('eval:classification'));
   assert.ok(!packageJson.scripts.verify.includes('eval:classification'));
 });

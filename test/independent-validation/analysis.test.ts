@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { classifyIncident } from '../../src/application/classify-incident.js';
 import { OllamaClassifier } from '../../src/infrastructure/ollama/ollama-classifier.js';
 import { loadConfig } from '../../src/config.js';
 import { classificationInstructions } from '../../src/infrastructure/ollama/classification-instructions.js';
@@ -266,10 +265,8 @@ test('I005-AC-04/13 adversarial data reaches the real adapter without separate l
       message: { role: 'assistant', content: '{"category":"FEATURE"}' },
     });
   });
-  const category = await classifyIncident(
-    new OllamaClassifier(loadConfig({ OLLAMA_TIMEOUT_MS: '45000' })),
-    example.description.trim(),
-  );
+  const classifier = new OllamaClassifier(loadConfig({ OLLAMA_TIMEOUT_MS: '45000' }));
+  const category = await classifier.classify(example.description.trim());
   assert.deepEqual(category, { category: 'FEATURE' });
   assert.equal(calls, 1);
 });

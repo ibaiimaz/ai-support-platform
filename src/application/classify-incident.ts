@@ -1,5 +1,3 @@
-import type { IncidentClassifier } from './incident-classifier.js';
-import type { Classification } from '../domain/classification.js';
 import type { ClassificationLlm, LlmMessage } from './classification-llm.js';
 import type { ClassificationResult } from './classification-result.js';
 import type { IncidentRepository } from './incident-repository.js';
@@ -15,7 +13,7 @@ export interface ToolCallingDependencies {
   now?: () => number;
 }
 
-async function orchestrateClassification(
+export async function classifyIncident(
   dependencies: ToolCallingDependencies,
   description: string,
 ): Promise<ClassificationResult> {
@@ -72,26 +70,4 @@ async function orchestrateClassification(
   }
 
   return classificationResult(second, toolResult.status === 'UNAVAILABLE');
-}
-
-export function classifyIncident(
-  classifier: IncidentClassifier,
-  description: string,
-): Promise<Classification>;
-
-export function classifyIncident(
-  dependencies: ToolCallingDependencies,
-  description: string,
-): Promise<ClassificationResult>;
-
-export function classifyIncident(
-  dependencies: IncidentClassifier | ToolCallingDependencies,
-  description: string,
-): Promise<Classification | ClassificationResult> {
-  // Temporary compatibility path until HTTP and historical runners migrate separately.
-  if ('classify' in dependencies) {
-    return dependencies.classify(description);
-  }
-
-  return orchestrateClassification(dependencies, description);
 }
