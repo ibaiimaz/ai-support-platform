@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "caseId": "I006-001",
+  "execute": false,
+  "approvalReference": null,
+  "maximumAttempts": 1,
+  "baseUrl": "http://localhost:11434",
+  "model": "llama3.1:8b",
+  "modelDigest": "46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e",
+  "ollamaVersion": "0.40.14",
+  "scenarioHash": "7f3104eab946e2c414c54e9a3785b1ff4b1f52097ebf6d87b36c631b97e09b1b",
+  "promptHash": "0f564a0403fe1f6ef24a3904f7efe1f6cef5869067b379a0f3381ff59fb487fc",
+  "protocolHash": "61103b95a66abc519d3ce1c2b69dc28b722c82b6b394c34f2eec93417d5cb0a1",
+  "modelMetadataHash": "c8a0cdf49e77e04d8e87a5ae8973f008d1ec0ecd6481e26af18649d46327eec8",
+  "identityHash": null,
+  "datasetHash": "fa5b19d7783417220d2b852eabe9260352ba808a4307676f6a20fa86a4562490"
+}
