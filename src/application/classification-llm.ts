@@ -26,7 +26,13 @@ export type LlmMessage =
       callId?: string;
     };
 
+export type LookupDecision = { type: 'no_lookup' } | { type: 'tool_calls'; calls: ToolCall[] };
+
+export type FinalClassification =
+  { type: 'classification'; category: Category } | { type: 'abstention' };
+
 export type LlmResponse =
+  | { type: 'no_lookup' }
   | {
       type: 'classification';
       category: Category;

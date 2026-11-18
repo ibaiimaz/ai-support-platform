@@ -4,11 +4,15 @@ Proyecto educativo backend para explorar aplicaciones que integran LLM mediante 
 
 La iteración 001 implementa `POST /api/v1/incidents/classify`: recibe una descripción y devuelve `BUG`, `FEATURE` o `QUESTION`. Usa Fastify, TypeScript estricto y Ollama local, con clasificación síncrona y proveedor desacoplado. La iteración está `Verified` desde el **2026-11-04**, tras revisión y aceptación humana de la implementación, la legibilidad y el funcionamiento real con Ollama; véase el registro de la [iteración](specs/iterations/001-classification.md).
 
-La composición actual de la API corresponde a **I006, fases 1–5 implementadas**, con
-orquestación de herramientas y repositorio sintético. Los estados Verified de I001–I005
-registran sus cierres históricos; no verifican el comportamiento real del nuevo flujo I006.
-La integración tiene pruebas deterministas; la compatibilidad local de tool calling, la
-estrategia tools/format y la eficacia del prompt I006 **siguen pendientes de evaluación real**.
+La composición actual de la API corresponde a **I006 revisión 6**, con herramientas y
+repositorio sintético. Los estados Verified de I001–I005 son cierres históricos, no aceptación
+experimental de I006. Su experimento y diagnósticos anteriores están cerrados; el experimento
+original quedó INCOMPLETE y no se adopta tools + format simultáneo. El
+[registro histórico](evals/experiments/i006-usage.md#ejecuciones-históricas-cerradas) distingue sus evidencias.
+
+El **2026-11-18** se aprobó [I006 revisión 6](specs/iterations/006-tool-calling.md) y el
+[ADR-003](specs/adr/ADR-003-separate-lookup-decision-and-classification.md): primera inferencia
+para decidir consulta nativa, segunda obligatoria para clasificar con esquema. **Implementada y aceptada por el responsable el 2026-11-18 tras segunda revisión independiente APPROVED; evaluación real pendiente**. Dataset congelado intacto; no hay autorización para nuevas inferencias.
 
 ## Instalar, compilar y probar
 
@@ -58,7 +62,7 @@ I006 utiliza constantes: **45 segundos por inferencia, 5 por herramienta y 90 gl
 sin reintentos, con un máximo de dos inferencias y una consulta. `OLLAMA_TIMEOUT_MS` sigue
 siendo configuración histórica de `OllamaClassifier`; `loadConfig()` la valida al arrancar,
 pero no modifica los límites I006. No se añaden variables de entorno para esos límites.
-La [especificación I006](specs/iterations/006-tool-calling.md) define el contrato vigente.
+La [especificación I006 revisión 6](specs/iterations/006-tool-calling.md) define el flujo implementado: una decisión con herramientas sin format y una clasificación obligatoria sin herramientas con esquema. Todo resultado final requiere dos inferencias, con o sin consulta, sin cambiar HTTP. El texto de decisión se descarta; una solicitud inválida o fallo previo detiene el recorrido.
 
 `main.ts` usa `createClassificationDependencies()` para construir `OllamaClassificationLlm`,
 `SyntheticIncidentRepository` y las instrucciones independientes de I006. El repositorio
@@ -82,8 +86,7 @@ que ignore el timeout.
 
 ## Probar con Ollama real
 
-Las instrucciones siguientes son manuales. Para I006 la comprobación real requiere una
-autorización posterior; no forma parte de `npm run verify` y no se ha ejecutado en esta fase.
+Las instrucciones siguientes describen uso manual, no autorizan ejecutarlo ahora. Las ejecuciones I006 anteriores están cerradas y no deben repetirse. La ejecución real de revisión 6 requiere autorización posterior y no forma parte de `npm run verify`. Los diagnósticos históricos se han retirado: sus comandos bloquean antes de cualquier acceso al proveedor o escritura.
 
 Instala Ollama por separado. Con su servicio local activo, descarga el modelo si aún no existe:
 
@@ -192,6 +195,8 @@ criterios, evidencias y limitaciones sin alterar la especificación congelada ni
 - [Iteración 004](specs/iterations/004-local-model-comparison.md): comparación exploratoria de sistemas Ollama, Verified el 2026-11-09; sin promoción ni validación independiente.
 - [ADR-001](specs/adr/ADR-001-sync-classification.md): clasificación síncrona.
 - [ADR-002](specs/adr/ADR-002-provider-abstraction.md): separación del proveedor.
+- [I006 revisión 6](specs/iterations/006-tool-calling.md): separación implementada de decisión y clasificación, con validación determinista y evaluación real pendiente.
+- [ADR-003](specs/adr/ADR-003-separate-lookup-decision-and-classification.md): dos fases de I006 y conservación de los experimentos cerrados.
 - [AGENTS.md](AGENTS.md): reglas permanentes para agentes.
 
 Cada iteración sigue `Draft → Approved → In Progress → Implemented → Verified`. Los tests se relacionan con criterios de aceptación mediante IDs estables. `Implemented` refleja código y comprobaciones completados; `Verified` requiere revisión y aceptación humana. Los cambios a decisiones aprobadas se proponen antes de aplicarse. No se crean commits automáticamente.

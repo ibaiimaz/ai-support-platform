@@ -133,6 +133,7 @@ test('I006 technical diagnostics: allowlisted codes reach persisted reports; leg
         dataset,
         {
           systemInstructions: secret,
+          classificationInstructions: secret,
           llm: {
             async infer() {
               requests++;
@@ -180,6 +181,7 @@ test('I006 technical diagnostics: HTTP remains generic and other provider failur
   assert.equal(new ClassificationError('timeout', 'FINAL_SCHEMA_INVALID').diagnostic, undefined);
   const app = buildApp({
     systemInstructions: secret,
+    classificationInstructions: secret,
     llm: {
       async infer() {
         throw new ClassificationError('invalid_response', 'FINAL_SCHEMA_INVALID');

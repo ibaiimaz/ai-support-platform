@@ -196,6 +196,7 @@ test('I001-AC-05 I001-AC-10 integración HTTP y adaptador sin filtrar contenidos
   let body = '';
   let logs = '';
   const { url: providerUrl } = await server(t, (req, res) => {
+    body = '';
     req.on('data', (chunk) => {
       body += chunk;
     });

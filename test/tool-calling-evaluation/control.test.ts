@@ -18,7 +18,8 @@ async function setup() {
   const directory = join(root, 'controls');
   const authorizationPath = join(root, 'authorization.json');
   const authorization: Authorization = {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    protocolId: 'I006-DECISION-CLASSIFICATION-V1',
     experiment: 'I006',
     datasetReview: 'APPROVED_FROZEN',
     datasetHash: identity.datasetHash,
@@ -54,6 +55,10 @@ test('AC-12/21: explicit initialization, durable reservation before dispatch, fu
         const reserved = JSON.parse(await readFile(join(fixture.directory, 'budget.json'), 'utf8'));
         assert.equal(reserved.pending, example.id);
         assert.equal(reserved.reservedSlots, (index + 1) * 2);
+        await control.attempt(example, 'decision');
+        control.dispatch(example);
+        await control.attempt(example, 'classification');
+        control.dispatch(example);
         await control.record(results[index]!);
       }
       await assert.rejects(control.reserve(fixture.dataset.examples[0]!));
@@ -61,7 +66,7 @@ test('AC-12/21: explicit initialization, durable reservation before dispatch, fu
     const final = JSON.parse(await readFile(join(fixture.directory, 'budget.json'), 'utf8'));
     assert.equal(final.phase, 'CLOSED');
     assert.equal(final.reservedSlots, 120);
-    assert.equal(final.observedAttempts, 93);
+    assert.equal(final.observedAttempts, 120);
     await assert.rejects(
       fixture.invoke(false, async () => {
         assert.fail('Repeat');
@@ -283,6 +288,146 @@ test('AC-12/21: disappearing durable ledger during a run is never silently recre
     assert.equal(entered, false);
     await assert.rejects(readFile(join(fixture.directory, 'budget.json')));
     await assert.rejects(fixture.invoke(true, async () => {}));
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('AC-12/26 R6: durable per-phase attempt precedes dispatch and revocation blocks the reserved send', async () => {
+  const fixture = await setup();
+  try {
+    await fixture.invoke(true, async () => {});
+    await fixture.invoke(false, async (control) => {
+      const example = fixture.dataset.examples[0]!;
+      await control.reserve(example);
+      await control.attempt(example, 'decision');
+      const journal = JSON.parse(
+        await readFile(join(fixture.directory, `${example.id}-decision.json`), 'utf8'),
+      );
+      assert.deepEqual(journal, {
+        id: example.id,
+        phase: 'decision',
+        state: 'RESERVED_POSSIBLE_DISPATCH',
+      });
+      const ledger = JSON.parse(await readFile(join(fixture.directory, 'budget.json'), 'utf8'));
+      assert.equal(ledger.observedAttempts, 1);
+      assert.equal(ledger.reservedSlots, 2);
+      control.verifyDispatch(example);
+      await writeFile(
+        fixture.authorizationPath,
+        JSON.stringify({ ...fixture.authorization, execute: false }),
+      );
+      assert.throws(() => control.verifyDispatch(example), /not authorized/);
+      await assert.rejects(control.attempt(example, 'classification'), /not authorized/);
+    });
+    const final = JSON.parse(await readFile(join(fixture.directory, 'budget.json'), 'utf8'));
+    assert.equal(final.observedAttempts, 1);
+    assert.equal(final.pending, 'I006-001');
+    assert.equal(final.phase, 'CLOSED');
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('AC-12/26 R6: out-of-order, duplicate and concurrent attempt reservations permanently block dispatch', async () => {
+  for (const scenario of ['out-of-order', 'duplicate', 'concurrent']) {
+    const fixture = await setup();
+    try {
+      await fixture.invoke(true, async () => {});
+      await fixture.invoke(false, async (control) => {
+        const example = fixture.dataset.examples[0]!;
+        await control.reserve(example);
+        if (scenario === 'out-of-order') {
+          await assert.rejects(control.attempt(example, 'classification'), /blocked/);
+        } else if (scenario === 'duplicate') {
+          await control.attempt(example, 'decision');
+          await assert.rejects(control.attempt(example, 'decision'), /blocked/);
+        } else {
+          const attempts = await Promise.allSettled([
+            control.attempt(example, 'decision'),
+            control.attempt(example, 'decision'),
+          ]);
+          assert.ok(attempts.every((attempt) => attempt.status === 'rejected'));
+          assert.ok(
+            attempts.some(
+              (attempt) =>
+                attempt.status === 'rejected' &&
+                attempt.reason.message === 'Concurrent inference reservation',
+            ),
+          );
+        }
+        assert.throws(() => control.verifyDispatch(example), /changed/);
+        await assert.rejects(control.attempt(example, 'classification'), /blocked/);
+      });
+      const ledger = JSON.parse(await readFile(join(fixture.directory, 'budget.json'), 'utf8'));
+      assert.equal(ledger.reservedSlots, 2);
+      assert.equal(ledger.pending, 'I006-001');
+      assert.ok(ledger.observedAttempts <= 1);
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  }
+});
+
+test('AC-12/26 R6: attempt persistence failure prevents dispatch and keeps uncertain reservation closed', async () => {
+  const fixture = await setup();
+  try {
+    await fixture.invoke(true, async () => {});
+    let failPersistence = false;
+    let dispatched = false;
+    await fixture.invoke(
+      false,
+      async (control) => {
+        const example = fixture.dataset.examples[0]!;
+        await control.reserve(example);
+        failPersistence = true;
+        await assert.rejects(control.attempt(example, 'decision'), /simulated sync failure/);
+        assert.throws(() => control.verifyDispatch(example), /changed/);
+        try {
+          control.verifyDispatch(example);
+          dispatched = true;
+        } catch {
+          // A durable uncertainty must never reach the simulated provider.
+        }
+        failPersistence = false;
+      },
+      {
+        ...synchronization,
+        async file(handle) {
+          if (failPersistence) {
+            throw new Error('simulated sync failure');
+          }
+          await handle.sync();
+        },
+      },
+    );
+    assert.equal(dispatched, false);
+    const ledger = JSON.parse(await readFile(join(fixture.directory, 'budget.json'), 'utf8'));
+    assert.equal(ledger.phase, 'CLOSED');
+    assert.equal(ledger.reservedSlots, 2);
+    assert.equal(ledger.pending, 'I006-001');
+    await assert.rejects(fixture.invoke(false, async () => {}));
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('AC-12 R6: disabled authorization fails before creating the controls namespace', async () => {
+  const fixture = await setup();
+  try {
+    await writeFile(
+      fixture.authorizationPath,
+      JSON.stringify({ ...fixture.authorization, initialize: false, execute: false }),
+    );
+    await assert.rejects(
+      fixture.invoke(true, async () => {}),
+      /not authorized/,
+    );
+    await assert.rejects(
+      fixture.invoke(false, async () => {}),
+      /not authorized/,
+    );
+    await assert.rejects(readdir(fixture.directory), { code: 'ENOENT' });
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }

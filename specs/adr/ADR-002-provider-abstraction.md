@@ -22,3 +22,10 @@ El proveedor simulado permite probar el caso de uso y HTTP de forma aislada. Otr
 ## Alternativas
 
 Llamar directamente a Ollama desde la ruta reduce inicialmente archivos, pero mezcla HTTP público y protocolo externo. Una abstracción genérica de LLM añadiría capacidades que esta operación no necesita. Se elige un puerto específico para mantener el alcance reducido.
+
+## Evolución I006
+
+El [ADR-003](ADR-003-separate-lookup-decision-and-classification.md), aprobado el 2026-11-18,
+especifica decisión de consulta y clasificación como fases del mismo puerto específico I006,
+sin introducir un puerto genérico ni proveedor adicional. `IncidentClassifier` y `OllamaClassifier`
+conservan la ruta histórica de I002–I005; la evolución de I006 no reabre sus experimentos.

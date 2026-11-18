@@ -37,6 +37,7 @@ test('I001-AC-11 I006-AC-14/24 caso de uso I006 independiente y propagación de 
   let calls = 0;
   const dependencies: ToolCallingDependencies = {
     systemInstructions: 'Classification test instructions',
+    classificationInstructions: 'Classification test instructions',
     repository: {
       async getById() {
         assert.fail('A direct classification must not access the repository');
@@ -49,7 +50,10 @@ test('I001-AC-11 I006-AC-14/24 caso de uso I006 independiente y propagación de 
           { role: 'system', content: 'Classification test instructions' },
           { role: 'user', content: 'text' },
         ]);
-        assert.equal(options.toolsEnabled, true);
+        assert.equal(options.toolsEnabled, calls === 1);
+        if (options.toolsEnabled) {
+          return { type: 'no_lookup' };
+        }
         return { type: 'classification', category: 'FEATURE' };
       },
     },
@@ -58,7 +62,7 @@ test('I001-AC-11 I006-AC-14/24 caso de uso I006 independiente y propagación de 
     status: 'CLASSIFIED',
     category: 'FEATURE',
   });
-  assert.equal(calls, 1);
+  assert.equal(calls, 2);
   const error = new ClassificationError('timeout');
   dependencies.llm.infer = async () => {
     throw error;

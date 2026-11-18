@@ -1,5 +1,7 @@
 # I006 — Smoke test de compatibilidad
 
+> **Retirado bajo I006 revisión 6 (2026-11-18).** Todas sus entradas, incluidos `--check` y `--run`, rechazan con `I006_DIAGNOSTIC_RETIRED` antes de leer autorizaciones, reservar presupuesto, acceder al proveedor o modificar evidencias. Las instrucciones y resultados siguientes son históricos. La implementación original se conserva en Git; sus autorizaciones, identidades y evidencias permanecen intactas. No debe ejecutarse con la semántica nueva.
+
 **Diagnóstico cerrado — PASSED — 2026-11-17.** La primera y única ejecución real ha terminado y ha sido aceptada por el responsable del proyecto. La configuración versionada [i006-smoke-authorization.json](i006-smoke-authorization.json) queda desactivada y sin autorización reutilizable: `execute: false`, `identityHash: null` y `approvalReference: null`. La autorización efectiva utilizada se conserva únicamente en las evidencias privadas; la referencia e identidad históricas figuran en el resumen de resultado, que no concede permisos.
 
 Este diagnóstico no inicializa el experimento, no modifica su manifiesto, no carga casos del dataset y no aporta resultados a sus métricas. El dataset I006 contenido v3 permanece congelado. No se modifica código productivo ni se reproduce la orquestación dentro del diagnóstico.

@@ -22,6 +22,7 @@ function fixture(
   let queries = 0;
   const dependencies: ToolCallingDependencies = {
     systemInstructions: 'PROMPT_SECRET',
+    classificationInstructions: 'PROMPT_SECRET',
     llm: {
       async infer() {
         const response = responses[inferences++];
@@ -59,7 +60,7 @@ function checkHttpContract() {
 void checkHttpContract;
 
 test('I006-AC-15/16/25 direct abstention is 422 with the exact public error envelope', async (t) => {
-  const state = fixture([{ type: 'abstention' }]);
+  const state = fixture([{ type: 'no_lookup' }, { type: 'abstention' }]);
   const app = buildApp(state.dependencies);
   t.after(() => app.close());
   const result = await app.inject({
@@ -73,7 +74,7 @@ test('I006-AC-15/16/25 direct abstention is 422 with the exact public error enve
     'INSUFFICIENT_CONTEXT',
     'No hay contexto suficiente para clasificar la incidencia.',
   );
-  assert.deepEqual(state.counts(), { inferences: 1, queries: 0 });
+  assert.deepEqual(state.counts(), { inferences: 2, queries: 0 });
 });
 
 for (const scenario of [

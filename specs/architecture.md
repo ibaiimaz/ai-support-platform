@@ -4,6 +4,8 @@
 
 Arquitectura implementada para la primera iteración, en estado `Verified` desde el **2026-11-04** tras revisión y aceptación humana. El contrato normativo se mantiene en la [especificación 001](iterations/001-classification.md). La aceptación de la implementación se registra mediante el estado de la iteración.
 
+La composición HTTP implementada actualmente corresponde a I006 revisión 5. La [revisión 6](iterations/006-tool-calling.md) y el [ADR-003](adr/ADR-003-separate-lookup-decision-and-classification.md), aprobados el 2026-11-18, establecen dos fases obligatorias para completar una incidencia y están pendientes de implementación. Las secciones históricas siguientes no afirman que ese cambio ya esté desplegado.
+
 ## Stack
 
 | Elección                                                | Motivo y coste                                                                                                                                            | Alternativa considerada                                           |
@@ -140,20 +142,20 @@ congelados. La mejora observada de Gemma es +13/90, con dos regresiones; dataset
 plantillas nativas distintas y recursos descriptivos limitan su interpretación. Verified no
 constituye autorización de despliegue ni selección automática de modelo.
 
-## Composición HTTP I006 — fase 5
+## Composición HTTP I006 implementada — revisión 6
 
 La composición productiva vigente sustituye el flujo HTTP histórico por I006. Las descripciones
 y cierres I001–I005 anteriores son antecedentes; sus artefactos, adaptadores y runners se
-conservan. Esta fase no marca I006 Verified ni aporta inferencias reales.
+conservan. La implementación no marca I006 Verified. Las ejecuciones posteriores y sus resultados cerrados se registran en la [guía I006](../evals/experiments/i006-usage.md#ejecuciones-históricas-cerradas); no verifican el diseño posterior de revisión 6.
 
 `main.ts` carga la configuración y llama a `createClassificationDependencies()` en
 `src/composition.ts`. La factoría construye `OllamaClassificationLlm` con URL/modelo,
-`SyntheticIncidentRepository` sin indisponibilidades simuladas y el prompt independiente
-`tool-calling-instructions.ts`. `buildApp()` y la ruta reciben únicamente dependencias I006,
+`SyntheticIncidentRepository` sin indisponibilidades simuladas y dos instrucciones explícitas:
+`lookup-decision-instructions.ts` y `classification-final-instructions.ts`. El prompt anterior
+`tool-calling-instructions.ts` se conserva como artefacto histórico. `buildApp()` y la ruta reciben únicamente dependencias I006,
 sin una sobrecarga HTTP histórica. Tras la migración de AC-24 en la fase 8, el caso de uso
 acepta exclusivamente `ToolCallingDependencies` y devuelve `ClassificationResult`; ya no
-contiene sobrecargas ni detección dinámica del clasificador histórico. Su cuerpo de
-orquestación se conserva.
+contiene sobrecargas ni detección dinámica del clasificador histórico. La orquestación implementa ahora las dos fases de revisión 6.
 
 I002–I005 comparten `src/evaluation/run-evaluation.ts`, que invoca directamente
 `classifier.classify(example.description.trim())`. Se conservan el contexto del método y
@@ -178,10 +180,52 @@ se clasifica. Fallos de proveedor/protocolo, solicitudes inválidas y deadline g
 códigos de validación/ruta/tamaño/contenido. Los logs contienen solo metadatos y causas
 controladas, sin prompts, argumentos, descripciones, respuestas crudas ni excepciones completas.
 
-Las pruebas deterministas verifican composición, protocolo con fetch simulado, las cuatro
-combinaciones NOT_FOUND/UNAVAILABLE con clasificación/abstención, privacidad y regresiones.
-No demuestran compatibilidad con el modelo o servidor local ni eficacia semántica del prompt.
-La estrategia tools sin format en la primera llamada y schema sin tools en la segunda,
-la correlación real y la resistencia a prompt injection siguen pendientes de autorización
-y evaluación con Ollama real. La cancelación continúa siendo best effort. No se añaden
-frameworks, dependencias, dataset o evals I006 en esta fase.
+Las pruebas deterministas de revisión 6 verifican composición, protocolo con fetch simulado,
+resultados de herramienta, privacidad y regresiones. La evidencia real posterior incluye un
+smoke satisfactorio, un experimento INCOMPLETE y dos diagnósticos cerrados, no una puerta
+experimental superada. No se adopta tools + format simultáneo. La cancelación sigue siendo
+best effort y no se acredita resistencia semántica general.
+
+## Arquitectura I006 — revisión 6 implementada, evaluación real pendiente
+
+El [ADR-003](adr/ADR-003-separate-lookup-decision-and-classification.md) conserva arquitectura
+hexagonal sencilla y composición explícita. No cambia HTTP, categorías, repositorio, herramienta,
+transporte, límites ni la ruta histórica de I002–I005.
+
+| Paso                 | Petición y responsabilidad                                                                                                                                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Decisión LLM         | Instrucciones de consulta y descripción original; tools nativas, sin format. Validar sobre; devolver llamadas intactas o `no_lookup` si no hay campo nativo de llamadas. Ignorar el texto como clasificación o instrucciones |
+| Herramienta opcional | Aplicación valida nombre, argumentos, ID y límites; como máximo una consulta; serializa FOUND/NOT_FOUND/UNAVAILABLE como datos no confiables                                                                                 |
+| Clasificación LLM    | Siempre necesaria para completar; instrucciones de clasificación, descripción original y turno/resultado de herramienta cuando exista. Sin tools, con esquema final y validación local estricta                              |
+
+Se reutiliza el mismo `ClassificationLlm.infer()` y su opción `toolsEnabled`. Se amplía
+`LlmResponse` con `LookupDecision`/`no_lookup` y se valida según fase. Clasificación o abstención
+internas no son admisibles como decisión; `no_lookup` no es resultado final. En la segunda fase
+se conservan las solicitudes nativas adicionales para que aplicación las rechace. Una lista
+vacía de llamadas sigue siendo solicitud inválida, no `no_lookup`.
+
+La conversación final se construye sin incorporar automáticamente texto del primer asistente.
+Si hay herramienta, mantiene el turno nativo de llamadas, el rol tool y la correlación; si no,
+solo necesita sistema de clasificación y usuario original. La composición provee instrucciones
+explícitas de ambas fases; la identidad experimental registra sus hashes por separado.
+
+Todo recorrido completado utiliza dos inferencias; errores/rechazos o deadline pueden detenerlo
+antes. Se mantiene un solo deadline monotónico de 90 s y timeouts efectivos min(45/5 s,
+remanente), sin reservas temporales ni reintentos. El resultado público y su mapeo HTTP siguen
+siendo los descritos arriba; menor frecuencia esperada de errores de formato no es una garantía.
+
+El runner existente observa fase de decisión y clasificación, con informe v2
+y protocolo explícito, mismos denominadores/umbrales y dataset v3 intacto. Una pasada admite como máximo 120 intentos; si los 60 casos alcanzan resultado final consume 120. Los rechazos de política conservan evaluabilidad y penalizaciones, aunque no ejecuten la segunda fase. Manifiesto, identidad, permisos y espacio de evidencias propios, previstos
+en la especificación, se reutilizan como mecanismos, no como controles de una ejecución cerrada.
+No se crea otro framework, infraestructura asíncrona, base de datos ni runner paralelo.
+
+Los prompts, fuentes y resultados históricos se identifican mediante sus commits e informes
+originales. Las autorizaciones anteriores no sirven para revisión 6. El manifiesto nuevo
+`i006-decision-classification-manifest.json` está desactivado, con identidad y aprobación nulas.
+El espacio privado previsto es `evals/reports/i006-decision-classification/`; no está inicializado.
+Los tres diagnósticos históricos se retiran mediante rechazo incondicional de sus entradas,
+antes de reservas, acceso al proveedor, repositorio o evidencias. Sus implementaciones originales
+se conservan en Git y sus controles privados permanecen intactos. Se reutilizan solo sus
+utilidades de transporte protegido, no una orquestación histórica alternativa.
+
+La implementación de revisión 6 fue aceptada por el responsable el **2026-11-18**, tras segunda revisión técnica independiente **APPROVED** y resolución de los hallazgos HIGH/LOW. Esto cierra la implementación, sin superar la puerta experimental ni marcar I006 Verified. Permisos desactivados y evidencias históricas intactas.

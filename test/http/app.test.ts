@@ -17,9 +17,14 @@ const url = '/api/v1/incidents/classify';
 
 function dependencies(llm: ClassificationLlm): ToolCallingDependencies {
   return {
-    llm,
+    llm: {
+      async infer(messages, options) {
+        return options.toolsEnabled ? { type: 'no_lookup' } : llm.infer(messages, options);
+      },
+    },
     repository: new SyntheticIncidentRepository(),
     systemInstructions: toolCallingInstructions,
+    classificationInstructions: toolCallingInstructions,
   };
 }
 

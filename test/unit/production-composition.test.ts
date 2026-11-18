@@ -1,10 +1,12 @@
+import { toolCallingInstructions } from '../../src/infrastructure/ollama/tool-calling-instructions.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createClassificationDependencies } from '../../src/composition.js';
 import { loadConfig } from '../../src/config.js';
 import { buildApp } from '../../src/http/app.js';
-import { toolCallingInstructions } from '../../src/infrastructure/ollama/tool-calling-instructions.js';
+import { lookupDecisionInstructions } from '../../src/infrastructure/ollama/lookup-decision-instructions.js';
+import { classificationFinalInstructions } from '../../src/infrastructure/ollama/classification-final-instructions.js';
 import { classificationInstructions } from '../../src/infrastructure/ollama/classification-instructions.js';
 import { Writable } from 'node:stream';
 
@@ -18,7 +20,7 @@ test('I006-AC-16/25 composition and startup perform no inference and have no sim
   t.after(() => app.close());
   await app.ready();
   assert.equal(requests, 0);
-  assert.equal(dependencies.systemInstructions, toolCallingInstructions);
+  assert.equal(dependencies.systemInstructions, lookupDecisionInstructions);
   for (const [id, category] of [
     ['INC-142', 'BUG'],
     ['INC-201', 'FEATURE'],
@@ -82,12 +84,15 @@ test('I006-AC-04/09/10/17/25 production factory connects HTTP, orchestration, na
   assert.equal(bodies.length, 2);
   assert.deepEqual(timeouts, [45_000, 45_000]);
   assert.equal(config.timeoutMs, 1, 'historical timeout must not select the I006 deadline');
-  for (const body of bodies) {
+  for (const [index, body] of bodies.entries()) {
     assert.equal(body.model, 'configured-tools-model');
     assert.equal(body.stream, false);
     assert.deepEqual(body.options, { temperature: 0 });
     assert.deepEqual(body.messages.slice(0, 2), [
-      { role: 'system', content: toolCallingInstructions },
+      {
+        role: 'system',
+        content: index === 0 ? lookupDecisionInstructions : classificationFinalInstructions,
+      },
       { role: 'user', content: 'Me pasa lo mismo que en INC-142' },
     ]);
   }
@@ -128,6 +133,11 @@ Después de FOUND, NOT_FOUND o UNAVAILABLE, clasifica si el contexto disponible 
 Se permite una única consulta. Después del resultado de la herramienta devuelve únicamente una respuesta final, sin solicitar más herramientas.
 Para clasificar, devuelve exclusivamente {"type":"classification","category":"BUG"}, utilizando BUG, FEATURE o QUESTION. Para abstenerte, devuelve exclusivamente {"type":"abstention"}. No añadas propiedades, explicaciones ni razonamiento visible.`,
   );
+  const dependencies = createClassificationDependencies(loadConfig({}));
+  assert.equal(dependencies.systemInstructions, lookupDecisionInstructions);
+  assert.equal(dependencies.classificationInstructions, classificationFinalInstructions);
+  assert.notEqual(lookupDecisionInstructions, toolCallingInstructions);
+  assert.notEqual(classificationFinalInstructions, toolCallingInstructions);
   assert.equal(
     createHash('sha256').update(classificationInstructions).digest('hex'),
     'ea81fca7322e307986b0ab3739fc9d73ad2384cc2361da8a0b28cfedf659a9ef',
@@ -235,7 +245,7 @@ test('I006-AC-09/11/12/15/17 retrieved instructions remain tool data and additio
     const body = JSON.parse(String(options?.body));
     if (requests === 1) {
       assert.deepEqual(body.messages, [
-        { role: 'system', content: toolCallingInstructions },
+        { role: 'system', content: lookupDecisionInstructions },
         { role: 'user', content: description },
       ]);
       return new Response(
@@ -251,7 +261,7 @@ test('I006-AC-09/11/12/15/17 retrieved instructions remain tool data and additio
     assert.equal(Object.hasOwn(body, 'tools'), false);
     assert.ok(body.format.oneOf);
     assert.deepEqual(body.messages, [
-      { role: 'system', content: toolCallingInstructions },
+      { role: 'system', content: classificationFinalInstructions },
       { role: 'user', content: description },
       { role: 'assistant', content: '', tool_calls: [firstCall] },
       {
@@ -309,7 +319,7 @@ test('I006-AC-09/11/12/15/17 retrieved instructions remain tool data and additio
     .map((line) => JSON.parse(line));
   assert.ok(entries.some((entry) => entry.providerCause === 'invalid_tool_call'));
   for (const marker of [
-    toolCallingInstructions,
+    lookupDecisionInstructions,
     'USER_SECRET',
     'TITLE_SECRET',
     'RECOVERED_SECRET',

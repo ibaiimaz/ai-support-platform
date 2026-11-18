@@ -27,7 +27,8 @@ import { latencySummary } from '../../src/evaluation/model-comparison/statistics
 import { createClassificationDependencies } from '../../src/composition.js';
 import { OllamaClassificationLlm } from '../../src/infrastructure/ollama/ollama-classification-llm.js';
 import { SyntheticIncidentRepository } from '../../src/infrastructure/incidents/synthetic-incident-repository.js';
-import { toolCallingInstructions } from '../../src/infrastructure/ollama/tool-calling-instructions.js';
+import { lookupDecisionInstructions } from '../../src/infrastructure/ollama/lookup-decision-instructions.js';
+import { classificationFinalInstructions } from '../../src/infrastructure/ollama/classification-final-instructions.js';
 
 test('I004-AC-01 I004-AC-02 fixtures desautorizados sin observaciones ni inferencias', async (t) => {
   const source = await loadManifest(process.cwd());
@@ -386,7 +387,9 @@ test('I004-AC-09 I004-AC-12 I006-AC-25 payload histórico intacto y composición
   const production = createClassificationDependencies(loadConfig({}));
   assert.ok(production.llm instanceof OllamaClassificationLlm);
   assert.ok(production.repository instanceof SyntheticIncidentRepository);
-  assert.equal(production.systemInstructions, toolCallingInstructions);
+  assert.equal(production.systemInstructions, lookupDecisionInstructions);
+  assert.equal(production.classificationInstructions, classificationFinalInstructions);
+  assert.notEqual(production.classificationInstructions, classificationInstructions);
   assert.notEqual(production.systemInstructions, classificationInstructions);
   assert.equal(payloads.length, 6, 'composing I006 must not make additional requests');
   assert.equal(

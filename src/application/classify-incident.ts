@@ -2,7 +2,11 @@ import type { ClassificationLlm, LlmMessage } from './classification-llm.js';
 import type { ClassificationResult } from './classification-result.js';
 import type { IncidentRepository } from './incident-repository.js';
 import { ClassificationDeadline } from './classification-deadline.js';
-import { assertLlmResponse, classificationResult } from './classification-response.js';
+import {
+  assertLookupDecision,
+  assertFinalResponse,
+  classificationResult,
+} from './classification-response.js';
 import { getIncidentById, type IncidentToolResult } from './get-incident-by-id.js';
 import { IncidentRepositoryError, InvalidToolCallError } from './tool-calling-errors.js';
 
@@ -10,6 +14,7 @@ export interface ToolCallingDependencies {
   llm: ClassificationLlm;
   repository: IncidentRepository;
   systemInstructions: string;
+  classificationInstructions: string;
   now?: () => number;
 }
 
@@ -25,49 +30,46 @@ export async function classifyIncident(
   const first = await deadline.run('llm', (timeoutMs) =>
     dependencies.llm.infer(messages, { timeoutMs, toolsEnabled: true }),
   );
-  assertLlmResponse(first);
+  assertLookupDecision(first);
   deadline.check();
-  if (first.type !== 'tool_calls') {
-    return classificationResult(first, false);
-  }
-
-  if (first.calls.length !== 1) {
-    throw new InvalidToolCallError();
-  }
-
-  const call = first.calls[0]!;
-  let toolResult: IncidentToolResult;
-  try {
-    toolResult = await deadline.run('tool', (timeoutMs) =>
-      getIncidentById(dependencies.repository, call, { timeoutMs }),
-    );
-  } catch (error) {
-    if (!(error instanceof IncidentRepositoryError)) {
-      throw error;
-    }
-
-    deadline.check();
-    toolResult = { status: 'UNAVAILABLE' };
-  }
-
   const secondMessages: LlmMessage[] = [
-    ...messages,
-    { role: 'assistant', toolCalls: first.calls },
-    {
-      role: 'tool',
-      name: call.name,
-      content: JSON.stringify(toolResult),
-      ...(call.callId !== undefined ? { callId: call.callId } : {}),
-    },
+    { role: 'system', content: dependencies.classificationInstructions },
+    { role: 'user', content: description },
   ];
+  let toolResult: IncidentToolResult | undefined;
+  if (first.type === 'tool_calls') {
+    if (first.calls.length !== 1) {
+      throw new InvalidToolCallError();
+    }
+    const call = first.calls[0]!;
+    try {
+      toolResult = await deadline.run('tool', (timeoutMs) =>
+        getIncidentById(dependencies.repository, call, { timeoutMs }),
+      );
+    } catch (error) {
+      if (!(error instanceof IncidentRepositoryError)) {
+        throw error;
+      }
+      deadline.check();
+      toolResult = { status: 'UNAVAILABLE' };
+    }
+    secondMessages.push(
+      { role: 'assistant', toolCalls: first.calls },
+      {
+        role: 'tool',
+        name: call.name,
+        content: JSON.stringify(toolResult),
+        ...(call.callId !== undefined ? { callId: call.callId } : {}),
+      },
+    );
+  }
   const second = await deadline.run('llm', (timeoutMs) =>
     dependencies.llm.infer(secondMessages, { timeoutMs, toolsEnabled: false }),
   );
-  assertLlmResponse(second);
+  assertFinalResponse(second);
   deadline.check();
   if (second.type === 'tool_calls') {
     throw new InvalidToolCallError();
   }
-
-  return classificationResult(second, toolResult.status === 'UNAVAILABLE');
+  return classificationResult(second, toolResult?.status === 'UNAVAILABLE');
 }

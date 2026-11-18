@@ -1,5 +1,7 @@
 # I006 — Diagnóstico independiente de primera inferencia
 
+> **Retirado bajo I006 revisión 6 (2026-11-18).** Todas sus entradas, incluidos `--check` y `--run`, rechazan con `I006_DIAGNOSTIC_RETIRED` antes de leer autorizaciones, reservar presupuesto, acceder al proveedor o modificar evidencias. Las instrucciones y resultados siguientes son históricos. La implementación original se conserva en Git; sus autorizaciones, identidades y evidencias permanecen intactas. No debe ejecutarse con la semántica nueva.
+
 Estado: implementado, pendiente de revisión y de autorización de cualquier inferencia real.
 
 Este diagnóstico observa exclusivamente la primera inferencia de `I006-001`. No reabre la

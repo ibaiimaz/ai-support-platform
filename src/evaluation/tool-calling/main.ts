@@ -2,19 +2,31 @@ import { readFile, readdir, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createClassificationDependencies } from '../../composition.js';
-import { loadConfig } from '../../config.js';
-import { toolCallingInstructions } from '../../infrastructure/ollama/tool-calling-instructions.js';
+import { loadConfig, type Config } from '../../config.js';
+import { lookupDecisionInstructions } from '../../infrastructure/ollama/lookup-decision-instructions.js';
+import { classificationFinalInstructions } from '../../infrastructure/ollama/classification-final-instructions.js';
+import { createGuardedTransport } from '../../diagnostics/i006-smoke.js';
+import {
+  captureCodeIdentity,
+  snapshotBuild,
+  type CodeVerification,
+} from '../independent-validation/code-state.js';
+import {
+  classificationProtocolId,
+  classificationAuthorizationFile,
+  classificationReportsDirectory,
+} from './protocol.js';
 import {
   incidentLookupTool,
   toolCallingFinalSchema,
 } from '../../infrastructure/ollama/tool-calling-protocol.js';
 import { sha256 } from '../dataset.js';
 import { findCodeReference } from '../code-reference.js';
-import { readAuthorization, withControl } from './control.js';
+import { readAuthorization, withControl, type DurableRunControl } from './control.js';
 import { loadDataset } from './dataset.js';
 import { buildReport, saveReport } from './report.js';
 import { runEvaluation } from './run.js';
-import type { CaseResult, RunIdentity } from './types.js';
+import type { CaseResult, RunIdentity, EvaluationDataset } from './types.js';
 
 async function treeIdentity(root: string): Promise<string> {
   const entries: [string, string][] = [];
@@ -59,7 +71,12 @@ async function metadata(baseUrl: string, path: string, body?: unknown): Promise<
   return response.json();
 }
 
-export async function effectiveIdentity(root: string, datasetHash: string): Promise<RunIdentity> {
+export async function effectiveIdentity(
+  root: string,
+  datasetHash: string,
+  code = captureCodeIdentity(root, snapshotBuild(join(root, 'dist'))),
+): Promise<RunIdentity> {
+  code.verify();
   const config = loadConfig();
   const tags = (await metadata(config.baseUrl, '/api/tags')) as {
     models?: { name: string; digest: string }[];
@@ -76,7 +93,10 @@ export async function effectiveIdentity(root: string, datasetHash: string): Prom
     modelDigest: model.digest,
     ollamaVersion: version.version,
     modelMetadataHash: sha256(JSON.stringify(show)),
-    promptHash: sha256(toolCallingInstructions),
+    protocolId: classificationProtocolId,
+    decisionPromptHash: sha256(lookupDecisionInstructions),
+    classificationPromptHash: sha256(classificationFinalInstructions),
+    codeIdentity: code.identity,
     protocolHash: sha256(
       JSON.stringify({ tool: incidentLookupTool, schema: toolCallingFinalSchema }),
     ),
@@ -88,6 +108,95 @@ export async function effectiveIdentity(root: string, datasetHash: string): Prom
     toolTimeoutMs: 5000,
     globalTimeoutMs: 90000,
   };
+}
+
+export async function runControlledEvaluation(
+  dataset: EvaluationDataset,
+  control: DurableRunControl,
+  options: {
+    config: Pick<Config, 'baseUrl' | 'model'>;
+    request: typeof fetch;
+    verifyCase: () => Promise<void>;
+    verifyDispatch: () => void;
+    checkpoint: (results: CaseResult[]) => Promise<void>;
+  },
+): Promise<CaseResult[]> {
+  let guard: ReturnType<typeof createGuardedTransport> | undefined;
+  let controlFailure = false;
+  let latest: CaseResult[] = [];
+  const dependencies = createClassificationDependencies(options.config, async (input, init) => {
+    if (!guard) {
+      throw new Error('No reserved evaluation case');
+    }
+    return guard.request(input, init);
+  });
+  const finish = async () => {
+    guard?.close();
+    await guard?.settle();
+    guard = undefined;
+  };
+  try {
+    return await runEvaluation(dataset, dependencies, {
+      accounting: (example) => control.accounting(example),
+      controlFailed: () => controlFailure,
+      finish,
+      async reserve(example) {
+        await options.verifyCase();
+        await control.reserve(example);
+        guard = createGuardedTransport({
+          baseUrl: options.config.baseUrl,
+          async request(input, init) {
+            try {
+              control.dispatch(example);
+            } catch {
+              controlFailure = true;
+              throw new Error('I006 dispatch control failed');
+            }
+            return options.request(input, init);
+          },
+          async reserve(attempt) {
+            try {
+              await control.attempt(example, attempt === 1 ? 'decision' : 'classification');
+            } catch {
+              controlFailure = true;
+              throw new Error('I006 reservation control failed');
+            }
+          },
+          beforeDispatch() {
+            try {
+              options.verifyDispatch();
+              control.verifyDispatch(example);
+            } catch {
+              controlFailure = true;
+              throw new Error('I006 pre-dispatch control failed');
+            }
+          },
+        });
+      },
+      async record(result) {
+        try {
+          await control.record(result);
+        } catch {
+          const failure: CaseResult = {
+            ...result,
+            outcome: 'TECHNICAL_ERROR',
+            failurePhase: 'control',
+            error: 'control_error',
+            final: null,
+            observation: { ...result.observation, toolDecisionCorrect: null },
+          };
+          delete failure.diagnostic;
+          // Preserve the prefix even if control storage failed; never retry the case.
+          await options.checkpoint([...latest, failure]);
+          throw new Error('I006 control persistence failed');
+        }
+        latest = [...latest, result];
+        await options.checkpoint(latest);
+      },
+    });
+  } finally {
+    await finish();
+  }
 }
 
 export async function main(root = process.cwd(), args = process.argv.slice(2)): Promise<number> {
@@ -111,7 +220,7 @@ export async function main(root = process.cwd(), args = process.argv.slice(2)): 
     );
     return 0;
   }
-  const authorizationPath = join(root, 'evals/experiments/i006-manifest.json');
+  const authorizationPath = join(root, 'evals/experiments', classificationAuthorizationFile);
   const authorization = await readAuthorization(authorizationPath);
   if (
     action !== '--identity' &&
@@ -119,14 +228,15 @@ export async function main(root = process.cwd(), args = process.argv.slice(2)): 
   ) {
     throw new Error('I006 action is disabled');
   }
-  const identity = await effectiveIdentity(root, hash);
+  const code = captureCodeIdentity(root, snapshotBuild(join(root, 'dist')));
+  const identity = await effectiveIdentity(root, hash, code);
   if (action === '--identity') {
     console.log(
       JSON.stringify({ identity, identityHash: sha256(JSON.stringify(identity)) }, null, 2),
     );
     return 0;
   }
-  const reports = join(root, 'evals/reports/i006');
+  const reports = join(root, 'evals/reports', classificationReportsDirectory);
   const controls = join(reports, 'controls');
   let exitCode = 1;
   await withControl(
@@ -137,26 +247,30 @@ export async function main(root = process.cwd(), args = process.argv.slice(2)): 
     action === '--initialize',
     async (control) => {
       const config = loadConfig();
-      const dependencies = createClassificationDependencies(config);
       const startedAt = new Date().toISOString();
-      let latest: CaseResult[] = [];
       await mkdir(reports, { recursive: true, mode: 0o700 });
       const runId = control.runId!;
-      const results = await runEvaluation(dataset, dependencies, {
-        async reserve(example) {
+      const results = await runControlledEvaluation(dataset, control, {
+        config,
+        request: fetch,
+        async verifyCase() {
           if (
             (await loadDataset(datasetPath)).hash !== hash ||
-            JSON.stringify(await effectiveIdentity(root, hash)) !== JSON.stringify(identity) ||
+            JSON.stringify(await effectiveIdentity(root, hash, code)) !==
+              JSON.stringify(identity) ||
             JSON.stringify(loadConfig()) !== JSON.stringify(config)
           ) {
             throw new Error('I006 inputs changed during execution');
           }
-          await control.reserve(example);
         },
-        async record(result) {
-          await control.record(result);
-          latest = [...latest, result];
-          await saveReport(reports, buildReport(dataset, identity, latest, startedAt, runId));
+        verifyDispatch() {
+          code.verify();
+          if (JSON.stringify(loadConfig()) !== JSON.stringify(config)) {
+            throw new Error('Configuration changed');
+          }
+        },
+        async checkpoint(results) {
+          await saveReport(reports, buildReport(dataset, identity, results, startedAt, runId));
         },
       });
       const report = buildReport(dataset, identity, results, startedAt, runId);

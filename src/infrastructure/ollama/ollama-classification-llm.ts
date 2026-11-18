@@ -46,6 +46,6 @@ export class OllamaClassificationLlm implements ClassificationLlm {
       this.request,
     );
 
-    return parseToolCallingResponse(text);
+    return parseToolCallingResponse(text, options.toolsEnabled);
   }
 }

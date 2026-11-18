@@ -66,7 +66,7 @@ test('I006-AC-17 tools enabled sends the exact native request without format or 
       ],
       { timeoutMs: 45_000, toolsEnabled: true },
     ),
-    { type: 'classification', category: 'FEATURE' },
+    { type: 'no_lookup' },
   );
   assert.equal(requests, 1);
 });
@@ -165,8 +165,8 @@ test('I006-AC-17 retains multiple unknown calls even when tools are disabled, wi
   assert.equal(requests, 1);
 });
 
-test('I006-AC-17 validates final JSON in both modes without repair, fallback or retries', async () => {
-  for (const toolsEnabled of [true, false]) {
+test('I006-AC-17 validates final JSON only in classification phase without repair, fallback or retries', async () => {
+  for (const toolsEnabled of [false]) {
     for (const content of [
       '{',
       '{"type":"abstention","extra":1}',
@@ -315,7 +315,7 @@ test('I006-AC-17 accepts a complete response at the byte limit and split Unicode
   );
 
   assert.deepEqual(await adapter.infer([], { timeoutMs: 45_000, toolsEnabled: true }), {
-    type: 'abstention',
+    type: 'no_lookup',
   });
 });
 
@@ -451,11 +451,11 @@ test('I006-AC-17 successful and invalid completed responses clear their timeout'
     });
     if (content === '{') {
       await assert.rejects(
-        adapter.infer([], { timeoutMs: 100, toolsEnabled: true }),
+        adapter.infer([], { timeoutMs: 100, toolsEnabled: false }),
         failure('invalid_response'),
       );
     } else {
-      await adapter.infer([], { timeoutMs: 100, toolsEnabled: true });
+      await adapter.infer([], { timeoutMs: 100, toolsEnabled: false });
     }
   }
 

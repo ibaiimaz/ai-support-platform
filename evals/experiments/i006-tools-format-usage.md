@@ -1,5 +1,7 @@
 # I006 — Compatibilidad independiente de tools + format
 
+> **Retirado bajo I006 revisión 6 (2026-11-18).** Todas sus entradas, incluidos `--check` y `--run`, rechazan con `I006_DIAGNOSTIC_RETIRED` antes de leer autorizaciones, reservar presupuesto, acceder al proveedor o modificar evidencias. Las instrucciones y resultados siguientes son históricos. La implementación original se conserva en Git; sus autorizaciones, identidades y evidencias permanecen intactas. No debe ejecutarse con la semántica nueva.
+
 Estado: implementación pendiente de revisión. No se han autorizado inferencias reales.
 
 Esta prueba independiente examina dos recorridos con el esquema final añadido a la primera

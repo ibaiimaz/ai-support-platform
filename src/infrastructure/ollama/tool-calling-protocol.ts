@@ -51,7 +51,9 @@ const validateFinal = new Ajv({
   coerceTypes: false,
   removeAdditional: false,
   useDefaults: false,
-}).compile<Exclude<LlmResponse, { type: 'tool_calls' }>>(toolCallingFinalSchema);
+}).compile<Exclude<LlmResponse, { type: 'tool_calls' } | { type: 'no_lookup' }>>(
+  toolCallingFinalSchema,
+);
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -114,7 +116,7 @@ function readToolCall(value: unknown): ToolCall {
   };
 }
 
-export function parseToolCallingResponse(text: string): LlmResponse {
+export function parseToolCallingResponse(text: string, decisionPhase = false): LlmResponse {
   const envelope = parseJson(text, 'ENVELOPE_JSON_INVALID');
   if (!isObject(envelope) || !isObject(envelope.message) || envelope.message.role !== 'assistant') {
     throw new ClassificationError('invalid_response', 'ENVELOPE_INVALID');
@@ -135,6 +137,13 @@ export function parseToolCallingResponse(text: string): LlmResponse {
 
     // Preserve every request, even an empty list, for application-level authorization.
     return { type: 'tool_calls', calls: message.tool_calls.map(readToolCall) };
+  }
+
+  if (decisionPhase) {
+    if (Object.hasOwn(message, 'content') && typeof message.content !== 'string') {
+      throw new ClassificationError('invalid_response', 'ENVELOPE_INVALID');
+    }
+    return { type: 'no_lookup' };
   }
 
   if (typeof message.content !== 'string') {

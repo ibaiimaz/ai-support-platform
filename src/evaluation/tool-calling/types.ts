@@ -1,3 +1,5 @@
+import type { CodeIdentity } from '../independent-validation/code-state.js';
+import type { classificationProtocolId } from './protocol.js';
 import type { InvalidResponseDiagnostic } from '../../application/classification-errors.js';
 import type { Category } from '../../domain/classification.js';
 import type { Incident } from '../../domain/incident.js';
@@ -62,7 +64,27 @@ export interface Observation {
   violations: string[];
 }
 
+export type InferencePhase = 'decision' | 'classification';
+
+export interface PhaseAccounting {
+  reserved: 0 | 1;
+  dispatched: 0 | 1;
+  reservationUncertain: boolean;
+}
+
+export type AttemptAccounting = Record<InferencePhase, PhaseAccounting>;
+
+export interface PhaseObservation {
+  started: boolean;
+  attempts: 0 | 1;
+  dispatched: 0 | 1;
+  reservationUncertain: boolean;
+  status: 'NOT_STARTED' | 'COMPLETED' | 'POLICY_REJECTED' | 'TECHNICAL_ERROR';
+}
+
 export interface CaseResult {
+  phases: Record<InferencePhase, PhaseObservation>;
+  failurePhase: InferencePhase | 'tool' | 'control' | null;
   id: string;
   outcome: 'COMPLETED' | 'POLICY_VIOLATION' | 'TECHNICAL_ERROR';
   observation: Observation;
@@ -110,7 +132,10 @@ export interface RunIdentity {
   modelDigest: string;
   ollamaVersion: string;
   modelMetadataHash: string;
-  promptHash: string;
+  protocolId: typeof classificationProtocolId;
+  decisionPromptHash: string;
+  classificationPromptHash: string;
+  codeIdentity: CodeIdentity;
   protocolHash: string;
   codeReference: string | null;
   sourceStateHash: string;
@@ -122,7 +147,8 @@ export interface RunIdentity {
 }
 
 export interface EvaluationReport {
-  schemaVersion: 1;
+  schemaVersion: 2;
+  protocolId: typeof classificationProtocolId;
   runId: string;
   startedAt: string;
   finishedAt: string;

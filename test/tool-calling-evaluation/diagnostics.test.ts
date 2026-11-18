@@ -97,6 +97,8 @@ test('AC-21/26: policy rejection is a missed expected abstention, never a predic
   rejected.outcome = 'POLICY_VIOLATION';
   rejected.final = null;
   rejected.error = 'invalid_tool_call';
+  rejected.failurePhase = 'classification';
+  rejected.phases.classification.status = 'POLICY_REJECTED';
   rejected.observation.toolDecisionCorrect = false;
   rejected.observation.toolRequestValid = false;
   const report = buildReport(dataset, identity, results, new Date().toISOString());
@@ -120,6 +122,8 @@ test('AC-21/23/26: technical and unattempted cases are excluded but still block 
   failed.outcome = 'TECHNICAL_ERROR';
   failed.final = null;
   failed.error = 'timeout';
+  failed.failurePhase = 'classification';
+  failed.phases.classification.status = 'TECHNICAL_ERROR';
   failed.observation.toolDecisionCorrect = null;
   const report = buildReport(dataset, identity, results, new Date().toISOString());
   // Only 042–045 are expected abstentions in the completed prefix; 046 failed technically.

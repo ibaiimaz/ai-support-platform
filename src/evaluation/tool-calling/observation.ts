@@ -1,8 +1,17 @@
 import type { ToolCallingDependencies } from '../../application/classify-incident.js';
-import { assertLlmResponse } from '../../application/classification-response.js';
+import {
+  assertFinalResponse,
+  assertLookupDecision,
+} from '../../application/classification-response.js';
 import { readIncidentId } from '../../application/get-incident-by-id.js';
 import { IncidentRepositoryError } from '../../application/tool-calling-errors.js';
-import type { EvaluationCase, Observation } from './types.js';
+import type {
+  EvaluationCase,
+  Observation,
+  CaseResult,
+  InferencePhase,
+  AttemptAccounting,
+} from './types.js';
 
 export function observe(dependencies: ToolCallingDependencies, example: EvaluationCase) {
   const observation: Observation = {
@@ -18,17 +27,52 @@ export function observe(dependencies: ToolCallingDependencies, example: Evaluati
     violations: [],
   };
   let closed = false;
+  let active: CaseResult['failurePhase'] = 'control';
+  const phases: CaseResult['phases'] = {
+    decision: {
+      started: false,
+      attempts: 0,
+      dispatched: 0,
+      reservationUncertain: false,
+      status: 'NOT_STARTED',
+    },
+    classification: {
+      started: false,
+      attempts: 0,
+      dispatched: 0,
+      reservationUncertain: false,
+      status: 'NOT_STARTED',
+    },
+  };
   const wrapped: ToolCallingDependencies = {
     ...dependencies,
     llm: {
       async infer(messages, options) {
-        observation.inferenceCount++;
+        const phase: InferencePhase = options.toolsEnabled ? 'decision' : 'classification';
+        if (closed || phases[phase].attempts !== 0) {
+          throw new Error('Evaluation phase repeated or closed');
+        }
+        active = phase;
+        // Port-only simulations observe a provider invocation here. The controlled runner
+        // replaces these counters with durable reservations and actual transport dispatches.
+        phases[phase] = {
+          started: true,
+          attempts: 1,
+          dispatched: 1,
+          reservationUncertain: false,
+          status: 'TECHNICAL_ERROR',
+        };
         try {
           const response = await dependencies.llm.infer(messages, options);
           if (closed) {
             return response;
           }
-          assertLlmResponse(response);
+          if (options.toolsEnabled) {
+            assertLookupDecision(response);
+          } else {
+            assertFinalResponse(response);
+          }
+          phases[phase].status = 'COMPLETED';
           if (response.type === 'tool_calls') {
             observation.toolRequested = true;
             observation.requestCount += Math.max(1, response.calls.length);
@@ -47,7 +91,7 @@ export function observe(dependencies: ToolCallingDependencies, example: Evaluati
           }
           return response;
         } catch (error) {
-          if (!closed && observation.toolRequested !== true) {
+          if (!closed && options.toolsEnabled && observation.toolRequested !== true) {
             observation.toolRequested = null;
           }
           throw error;
@@ -59,6 +103,7 @@ export function observe(dependencies: ToolCallingDependencies, example: Evaluati
         if (closed) {
           throw new Error('Closed evaluation observation');
         }
+        active = 'tool';
         observation.toolExecuted = true;
         observation.executionCount++;
         try {
@@ -78,8 +123,33 @@ export function observe(dependencies: ToolCallingDependencies, example: Evaluati
   };
   return {
     dependencies: wrapped,
+    phaseResult(
+      outcome: CaseResult['outcome'],
+      accounting?: AttemptAccounting,
+      controlFailure = false,
+    ) {
+      if (outcome !== 'COMPLETED' && (active === 'decision' || active === 'classification')) {
+        phases[active].status =
+          outcome === 'POLICY_VIOLATION' ? 'POLICY_REJECTED' : 'TECHNICAL_ERROR';
+      }
+      if (accounting) {
+        for (const phase of ['decision', 'classification'] as const) {
+          phases[phase].attempts = accounting[phase].reserved;
+          phases[phase].dispatched = accounting[phase].dispatched;
+          phases[phase].reservationUncertain = accounting[phase].reservationUncertain;
+        }
+      }
+      observation.inferenceCount = phases.decision.attempts + phases.classification.attempts;
+      return {
+        phases: structuredClone(phases),
+        failurePhase: outcome === 'COMPLETED' ? null : controlFailure ? 'control' : active,
+      };
+    },
     close(evaluable: boolean): Observation {
       closed = true;
+      if (!phases.decision.started) {
+        observation.toolRequested = null;
+      }
       observation.toolDecisionCorrect = !evaluable
         ? null
         : example.toolExpected

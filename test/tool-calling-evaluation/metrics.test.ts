@@ -50,6 +50,8 @@ test('AC-20: multiple/additional requests contribute one case; policy rejection 
   result.outcome = 'POLICY_VIOLATION';
   result.final = null;
   result.error = 'invalid_tool_call';
+  result.failurePhase = 'classification';
+  result.phases.classification.status = 'POLICY_REJECTED';
   result.observation.toolDecisionCorrect = false;
   result.observation.toolRequestValid = false;
   result.observation.requestCount = 3;
@@ -78,6 +80,8 @@ test('AC-21/23: technical and absent cases remain visible, exclude incomplete pa
   failed.outcome = 'TECHNICAL_ERROR';
   failed.final = null;
   failed.error = 'timeout';
+  failed.failurePhase = 'classification';
+  failed.phases.classification.status = 'TECHNICAL_ERROR';
   failed.observation.toolDecisionCorrect = null;
   const report = buildReport(dataset, identity, results, new Date().toISOString());
   assert.equal(report.status, 'INCOMPLETE');

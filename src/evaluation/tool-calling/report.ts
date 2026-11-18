@@ -1,3 +1,4 @@
+import { classificationProtocolId } from './protocol.js';
 import { invalidResponseDiagnostics } from '../../application/classification-errors.js';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -19,6 +20,23 @@ const validateResult = new Ajv({ strictTypes: false }).compile<CaseResult>(
   object(
     {
       diagnostic: { enum: [...invalidResponseDiagnostics] },
+      phases: object({
+        decision: object({
+          started: { type: 'boolean' },
+          attempts: { type: 'integer', minimum: 0, maximum: 1 },
+          dispatched: { type: 'integer', minimum: 0, maximum: 1 },
+          reservationUncertain: { type: 'boolean' },
+          status: { enum: ['NOT_STARTED', 'COMPLETED', 'POLICY_REJECTED', 'TECHNICAL_ERROR'] },
+        }),
+        classification: object({
+          started: { type: 'boolean' },
+          attempts: { type: 'integer', minimum: 0, maximum: 1 },
+          dispatched: { type: 'integer', minimum: 0, maximum: 1 },
+          reservationUncertain: { type: 'boolean' },
+          status: { enum: ['NOT_STARTED', 'COMPLETED', 'POLICY_REJECTED', 'TECHNICAL_ERROR'] },
+        }),
+      }),
+      failurePhase: { enum: [null, 'decision', 'tool', 'classification', 'control'] },
       id: { type: 'string', pattern: '^I006-[0-9]{3}$' },
       outcome: { enum: ['COMPLETED', 'POLICY_VIOLATION', 'TECHNICAL_ERROR'] },
       observation: object({
@@ -60,6 +78,7 @@ const validateResult = new Ajv({ strictTypes: false }).compile<CaseResult>(
           'invalid_response',
           'global_deadline_exceeded',
           'unexpected_error',
+          'control_error',
         ],
       },
       latencyMs: { type: 'number', minimum: 0 },
@@ -75,9 +94,36 @@ export function buildReport(
   startedAt: string,
   runId: string = randomUUID(),
 ): EvaluationReport {
+  if (identity.protocolId !== classificationProtocolId) {
+    throw new Error('Incompatible evaluation protocol');
+  }
   for (const result of results) {
     if (
       !validateResult(result) ||
+      result.phases.decision.attempts + result.phases.classification.attempts !==
+        result.observation.inferenceCount ||
+      Object.values(result.phases).some(
+        (phase) =>
+          !phase.started !== (phase.status === 'NOT_STARTED') ||
+          (!phase.started &&
+            (phase.attempts !== 0 || phase.dispatched !== 0 || phase.reservationUncertain)) ||
+          phase.dispatched > phase.attempts ||
+          (phase.reservationUncertain && phase.dispatched !== 0) ||
+          (phase.status === 'COMPLETED' &&
+            (phase.attempts !== 1 || phase.dispatched !== 1 || phase.reservationUncertain)),
+      ) ||
+      (result.outcome === 'COMPLETED' &&
+        (result.phases.decision.status !== 'COMPLETED' ||
+          result.phases.classification.status !== 'COMPLETED')) ||
+      (result.outcome === 'COMPLETED') !== (result.failurePhase === null) ||
+      (result.outcome === 'POLICY_VIOLATION' &&
+        (result.error !== 'invalid_tool_call' ||
+          (result.failurePhase !== 'decision' && result.failurePhase !== 'classification') ||
+          result.phases[result.failurePhase].status !== 'POLICY_REJECTED')) ||
+      (result.outcome === 'TECHNICAL_ERROR' && result.error === 'invalid_tool_call') ||
+      (result.error === 'control_error') !== (result.failurePhase === 'control') ||
+      (Object.values(result.phases).some((phase) => phase.reservationUncertain) &&
+        result.error !== 'control_error') ||
       (result.diagnostic !== undefined &&
         (result.error !== 'invalid_response' || result.outcome !== 'TECHNICAL_ERROR')) ||
       (result.outcome === 'COMPLETED') !== (result.final !== null) ||
@@ -99,7 +145,8 @@ export function buildReport(
       metrics.counterfactual,
     ].every((metric) => metric.passed);
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    protocolId: classificationProtocolId,
     runId,
     startedAt,
     finishedAt: new Date().toISOString(),

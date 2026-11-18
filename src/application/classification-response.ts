@@ -1,5 +1,5 @@
 import { categories } from '../domain/classification.js';
-import type { LlmResponse } from './classification-llm.js';
+import type { LlmResponse, LookupDecision, FinalClassification } from './classification-llm.js';
 import type { ClassificationResult } from './classification-result.js';
 import { ClassificationError } from './classification-errors.js';
 
@@ -23,6 +23,13 @@ function hasKeys(
 export function assertLlmResponse(value: unknown): asserts value is LlmResponse {
   if (!isObject(value)) {
     throw new ClassificationError('invalid_response', 'INTERNAL_RESPONSE_INVALID');
+  }
+
+  if (value.type === 'no_lookup') {
+    if (!hasKeys(value, ['type'])) {
+      throw new ClassificationError('invalid_response', 'INTERNAL_RESPONSE_INVALID');
+    }
+    return;
   }
 
   if (value.type === 'classification') {
@@ -67,8 +74,24 @@ export function assertLlmResponse(value: unknown): asserts value is LlmResponse 
   throw new ClassificationError('invalid_response', 'INTERNAL_RESPONSE_INVALID');
 }
 
+export function assertLookupDecision(value: unknown): asserts value is LookupDecision {
+  assertLlmResponse(value);
+  if (value.type !== 'no_lookup' && value.type !== 'tool_calls') {
+    throw new ClassificationError('invalid_response', 'INTERNAL_RESPONSE_INVALID');
+  }
+}
+
+export function assertFinalResponse(
+  value: unknown,
+): asserts value is FinalClassification | Extract<LlmResponse, { type: 'tool_calls' }> {
+  assertLlmResponse(value);
+  if (value.type === 'no_lookup') {
+    throw new ClassificationError('invalid_response', 'INTERNAL_RESPONSE_INVALID');
+  }
+}
+
 export function classificationResult(
-  response: Exclude<LlmResponse, { type: 'tool_calls' }>,
+  response: FinalClassification,
   toolUnavailable: boolean,
 ): ClassificationResult {
   if (response.type === 'classification') {

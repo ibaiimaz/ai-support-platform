@@ -21,7 +21,9 @@ import { runEvaluation } from '../../src/evaluation/run-evaluation.js';
 import { experimentProject, fixturePair } from './helpers.js';
 import { ollamaInference } from '../../src/infrastructure/ollama/inference-descriptor.js';
 import { createClassificationDependencies } from '../../src/composition.js';
-import { toolCallingInstructions } from '../../src/infrastructure/ollama/tool-calling-instructions.js';
+import { lookupDecisionInstructions } from '../../src/infrastructure/ollama/lookup-decision-instructions.js';
+import { classificationFinalInstructions } from '../../src/infrastructure/ollama/classification-final-instructions.js';
+import { toolCallingFinalSchema } from '../../src/infrastructure/ollama/tool-calling-protocol.js';
 
 test('I003-AC-01 I003-AC-04 candidatos registrados y baseline inmutable', async () => {
   const { manifest } = await loadManifest(process.cwd());
@@ -93,14 +95,19 @@ test('I003-AC-02 I003-AC-03 I003-AC-13 I006-AC-25 candidato histórico no cambia
   t.mock.method(globalThis, 'fetch', async (_input: unknown, options?: RequestInit) => {
     const payload = JSON.parse(String(options?.body));
     payloads.push(payload);
-    const httpI006 = payload.messages[0]?.content === toolCallingInstructions;
+    const decision = payload.messages[0]?.content === lookupDecisionInstructions;
+    const final = payload.messages[0]?.content === classificationFinalInstructions;
     return new Response(
       JSON.stringify({
         done: true,
         done_reason: 'stop',
         message: {
           role: 'assistant',
-          content: httpI006 ? '{"type":"classification","category":"BUG"}' : '{"category":"BUG"}',
+          content: decision
+            ? 'lookup not needed'
+            : final
+              ? '{"type":"classification","category":"BUG"}'
+              : '{"category":"BUG"}',
         },
       }),
     );
@@ -144,10 +151,10 @@ test('I003-AC-02 I003-AC-03 I003-AC-13 I006-AC-25 candidato histórico no cambia
   });
   assert.equal(httpResponse.statusCode, 200);
   assert.deepEqual(httpResponse.json(), { category: 'BUG' });
-  assert.equal(payloads.length, 61);
-  const httpPayload = payloads.at(-1)!;
+  assert.equal(payloads.length, 62);
+  const httpPayload = payloads.at(-2)!;
   assert.deepEqual(httpPayload.messages, [
-    { role: 'system', content: toolCallingInstructions },
+    { role: 'system', content: lookupDecisionInstructions },
     { role: 'user', content: 'Incidencia de prueba.' },
   ]);
   assert.notEqual(httpPayload.messages[0]!.content, findPrompt('h2').text);
@@ -156,6 +163,17 @@ test('I003-AC-02 I003-AC-03 I003-AC-13 I006-AC-25 candidato histórico no cambia
   assert.deepEqual(httpPayload.options, { temperature: 0 });
   assert.ok(Array.isArray(httpPayload.tools));
   assert.equal(Object.hasOwn(httpPayload, 'format'), false);
+  const finalPayload = payloads.at(-1)!;
+  assert.deepEqual(finalPayload.messages, [
+    { role: 'system', content: classificationFinalInstructions },
+    { role: 'user', content: 'Incidencia de prueba.' },
+  ]);
+  assert.equal(Object.hasOwn(finalPayload, 'tools'), false);
+  assert.deepEqual(finalPayload.format, toolCallingFinalSchema);
+  assert.equal(finalPayload.model, httpPayload.model);
+  assert.equal(finalPayload.stream, false);
+  assert.deepEqual(finalPayload.options, httpPayload.options);
+  assert.notEqual(finalPayload.messages[0]!.content, findPrompt('h2').text);
   assert.equal(sha256(classificationInstructions), baselinePrompt.sha256);
   const source = await readFile('src/main.ts', 'utf8');
   assert.ok(source.includes('buildApp(createClassificationDependencies(loadConfig()), true)'));

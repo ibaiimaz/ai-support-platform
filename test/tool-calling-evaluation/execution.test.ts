@@ -36,6 +36,7 @@ async function scripted(responses: (LlmResponse | Error)[], index = 20) {
         },
       },
       systemInstructions: toolCallingInstructions,
+      classificationInstructions: toolCallingInstructions,
     },
     { async reserve() {}, async record() {} },
   );
@@ -115,6 +116,7 @@ test('AC-21: any technical failure stops subsequent cases and records sanitized 
           },
         },
         systemInstructions: toolCallingInstructions,
+        classificationInstructions: toolCallingInstructions,
       },
       {
         async reserve() {},
@@ -166,8 +168,10 @@ test('AC-19/22/26: real orchestration runs 60 simulated cases sequentially witho
           ]);
           assert.ok(options.timeoutMs <= 45000 && options.timeoutMs > 0);
           active = false;
-          if (options.toolsEnabled && current.expectedTool) {
-            return call(current.expectedTool.incidentId);
+          if (options.toolsEnabled) {
+            return current.expectedTool
+              ? call(current.expectedTool.incidentId)
+              : { type: 'no_lookup' };
           }
           return current.expectedFinal.status === 'CLASSIFIED'
             ? { type: 'classification', category: current.expectedFinal.category }
@@ -180,6 +184,7 @@ test('AC-19/22/26: real orchestration runs 60 simulated cases sequentially witho
         },
       },
       systemInstructions: toolCallingInstructions,
+      classificationInstructions: toolCallingInstructions,
     },
     {
       async reserve(example) {
@@ -192,7 +197,7 @@ test('AC-19/22/26: real orchestration runs 60 simulated cases sequentially witho
     },
   );
   assert.equal(results.length, 60);
-  assert.equal(calls, 93);
+  assert.equal(calls, 120);
   assert.deepEqual(
     seen,
     dataset.examples.map((example) => example.id),
@@ -209,37 +214,45 @@ test('AC-19/22/26: real orchestration runs 60 simulated cases sequentially witho
 test('AC-12/21: failed reservation or persistence cannot dispatch a subsequent inference', async () => {
   for (const failAt of ['reserve', 'record']) {
     let calls = 0;
-    await assert.rejects(
-      runEvaluation(
-        await candidate(),
-        {
-          llm: {
-            async infer() {
-              calls++;
-              return { type: 'classification', category: 'BUG' };
-            },
-          },
-          repository: {
-            async getById() {
-              return null;
-            },
-          },
-          systemInstructions: toolCallingInstructions,
-        },
-        {
-          async reserve() {
-            if (failAt === 'reserve') {
-              throw new Error('disk');
-            }
-          },
-          async record() {
-            if (failAt === 'record') {
-              throw new Error('disk');
-            }
+    const pending = runEvaluation(
+      await candidate(),
+      {
+        llm: {
+          async infer() {
+            calls++;
+            return { type: 'classification', category: 'BUG' };
           },
         },
-      ),
+        repository: {
+          async getById() {
+            return null;
+          },
+        },
+        systemInstructions: toolCallingInstructions,
+        classificationInstructions: toolCallingInstructions,
+      },
+      {
+        async reserve() {
+          if (failAt === 'reserve') {
+            throw new Error('disk');
+          }
+        },
+        async record() {
+          if (failAt === 'record') {
+            throw new Error('disk');
+          }
+        },
+      },
     );
+    if (failAt === 'reserve') {
+      const results = await pending;
+      assert.equal(results.length, 1);
+      assert.equal(results[0]!.error, 'control_error');
+      assert.equal(results[0]!.failurePhase, 'control');
+      assert.equal(results[0]!.observation.inferenceCount, 0);
+    } else {
+      await assert.rejects(pending, /disk/);
+    }
     assert.equal(calls, failAt === 'reserve' ? 0 : 1);
   }
 });
