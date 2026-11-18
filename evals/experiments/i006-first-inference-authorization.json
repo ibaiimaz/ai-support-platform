@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "caseId": "I006-001",
   "execute": false,
-  "approvalReference": null,
+  "approvalReference": "I006-FIRST-INFERENCE-RUN-2026-11-17",
   "maximumAttempts": 1,
   "baseUrl": "http://localhost:11434",
   "model": "llama3.1:8b",
@@ -12,6 +12,6 @@
   "promptHash": "0f564a0403fe1f6ef24a3904f7efe1f6cef5869067b379a0f3381ff59fb487fc",
   "protocolHash": "61103b95a66abc519d3ce1c2b69dc28b722c82b6b394c34f2eec93417d5cb0a1",
   "modelMetadataHash": "c8a0cdf49e77e04d8e87a5ae8973f008d1ec0ecd6481e26af18649d46327eec8",
-  "identityHash": null,
+  "identityHash": "9753d4b7e581ac15ade14b33e9573e1353ad806b9ac49a0352582ce3561e3c9f",
   "datasetHash": "fa5b19d7783417220d2b852eabe9260352ba808a4307676f6a20fa86a4562490"
 }
