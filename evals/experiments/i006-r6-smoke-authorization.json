@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "diagnostic": "I006_R6_SMOKE",
+  "execute": false,
+  "identityHash": "c9fe02642def0e8f7fc487100cd8cfb0be8c54e7315665aa8c2c544faf2a9830",
+  "approvalReference": "I006-R6-SMOKE-RUN-2026-11-18",
+  "maximumAttempts": 4,
+  "dedicated": true,
+  "serverPid": 6581
+}
