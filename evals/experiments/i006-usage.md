@@ -10,7 +10,7 @@ La descripción original determina las referencias elegibles: sin IDs válidos, 
 
 Qwen3 8B Q4_K_M es candidato, digest `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`, temperatura 0, think false. La composición de evaluación lo prepara explícitamente; `loadConfig` conserva Llama por defecto, sin despliegue ni promoción. La adición de definiciones al prompt es hipótesis no evaluada.
 
-Protocolo `I006-HYBRID-CLASSIFICATION-V1`, manifiesto `evals/experiments/i006-hybrid-manifest.json`, evidencias previstas en `evals/reports/i006-hybrid/`: permisos false, identidad null, sin inicialización. Regresión conocida de 60 casos (16 sin IDs, 44 con IDs), máximo 104 intentos. No es validación independiente. Métricas CODE/LLM segmentadas informativas sin nuevos umbrales. Se conservan íntegros los manifiestos y las evidencias anteriores; los diagnósticos retirados siguen bloqueados. Revisión 7 pendiente de revisión independiente y validación experimental; I006 no está Verified ni aceptada.
+El protocolo de aplicación `I006-HYBRID-CLASSIFICATION-V1` prepara ahora dos cohortes separadas, KNOWN_REGRESSION (104 inferencias) e INDEPENDENT_HOLDOUT (105), con manifiestos `i006-r7-known-manifest.json` e `i006-r7-holdout-manifest.json` y directorios propios. Permisos false e identidades null, sin inicialización. La sección 20 de la especificación I006 y la guía operativa describen la preparación vigente. El conjunto original es regresión conocida; el nuevo holdout sintético está congelado y pendiente de revisión humana de etiquetas. No se mezclan métricas, no se promociona el candidato y no se reabren experimentos ni diagnósticos cerrados. I006 permanece Implemented y pendiente de aceptación experimental y humana definitiva.
 
 Estado normativo: [I006, revisión 6](../../specs/iterations/006-tool-calling.md), aprobada el **2026-11-18**, y [ADR-003](../../specs/adr/ADR-003-separate-lookup-decision-and-classification.md). La separación de decisión y clasificación está implementada con tests deterministas y aceptada por el responsable el 2026-11-18 tras segunda revisión independiente APPROVED; la evaluación real sigue pendiente. Como antecedente, los comandos de revisión 6 utilizaban su propio protocolo; el CLI actual prepara exclusivamente revisión 7 y no reabren la ejecución original.
 
@@ -235,7 +235,7 @@ Extracción únicamente del mensaje original, con límites Unicode de letras/mar
 
 Reserva durable de uno o dos slots antes del caso, journal de cada intento antes de enviar y fase derivada de la ruta, nunca del ordinal global. Para 16/44 casos la cota es 104, no 120; una reserva no usada no se libera. Se mantiene la separación inicio lógico/reserva/envío y el saneamiento control_error con parcial cuando sea persistible. Lock, cierre, incertidumbres, archivos ausentes y fallos de persistencia siguen bloqueando reinicios. No hay reanudación ni recuperación automática.
 
-El informe persistido y el resumen CLI identifican `dataset.cohort: KNOWN_REGRESSION` (CLI: `cohort`). `thresholdGate` informa PASSED/FAILED/INCOMPLETE únicamente respecto a los umbrales de esta cohorte; los estados COMPLETE_PASSED/COMPLETE_FAILED/INCOMPLETE tienen ese mismo alcance. Aunque se superen todos los umbrales, `experimentalGate` e `assessment.independentValidation` siguen NOT_EVALUATED. `assessment.scope` es COHORT_THRESHOLDS_ONLY y `assessment.iterationAcceptance` es NOT_GRANTED. Ningún estado concede aceptación de I006. La futura cohorte independiente deberá prepararse y autorizarse expresamente, sin reutilizar la atribución del conjunto conocido.
+El informe persistido y el resumen CLI identifican `dataset.cohort: KNOWN_REGRESSION` (CLI: `cohort`). `thresholdGate` informa PASSED/FAILED/INCOMPLETE únicamente respecto a los umbrales de esta cohorte; los estados COMPLETE_PASSED/COMPLETE_FAILED/INCOMPLETE tienen ese mismo alcance. Aunque se superen todos los umbrales, `experimentalGate` e `assessment.independentValidation` siguen NOT_EVALUATED. `assessment.scope` es COHORT_THRESHOLDS_ONLY y `assessment.iterationAcceptance` es NOT_GRANTED. Ningún estado concede aceptación de I006. La preparación vigente de INDEPENDENT_HOLDOUT se describe abajo; su revisión humana y autorización siguen pendientes y no reutilizan la atribución del conjunto conocido.
 
 Cada segmento incorpora `interpretation: DESCRIPTIVE_ONLY` y `bindingThresholds: false`. No hay umbrales adicionales vinculantes; las referencias numéricas de sus métricas son descriptivas.
 
@@ -246,3 +246,41 @@ El conjunto de 60 casos es regresión conocida, no holdout; se preserva íntegro
 ### Preparación comprobada — 2026-11-19
 
 Implementación R7: verificación integral 317/317 y comprobación adicional 51/51, sin inferencias reales. Identidad efectiva calculada mediante metadatos locales y comprobación fuente/build: `e3318481709c2aa03a2757fdd1bfd9f63bed202c05cfb02ec227b1d91ca10fd0`. Referencia Git `ab4df43` más fuentes/build modificados sin commit; no representa una identidad humana aprobada. Un commit posterior o cambio relevante exige recalcularla. El manifiesto conserva identityHash null, initialize false y execute false. No existe el directorio de controles R7.
+
+## Preparación actual: dos cohortes separadas
+
+La revisión técnica final de R7 está APPROVED. El comportamiento quedó congelado en `bcb30b5` antes de crear el [holdout completo para revisión humana](i006-holdout-review.md); el inventario es `i006-r7-system-freeze.json`. Esta sección sustituye los nombres operativos de la preparación de una sola cohorte anterior, que se conserva históricamente sin reutilizar sus controles.
+
+| Cohorte             | Dataset                                             | Manifiesto nuevo              | Directorio privado previsto    | Cota |
+| ------------------- | --------------------------------------------------- | ----------------------------- | ------------------------------ | ---: |
+| KNOWN_REGRESSION    | incidents-tool-calling-v1.json, contenido 3         | i006-r7-known-manifest.json   | evals/reports/i006-r7-known/   |  104 |
+| INDEPENDENT_HOLDOUT | incidents-tool-calling-holdout-v1.json, contenido 1 | i006-r7-holdout-manifest.json | evals/reports/i006-r7-holdout/ |  105 |
+
+Los resultados no se combinan. Para recomendar aceptación deben superar los cinco umbrales en **ambas** cohortes y los controles deterministas al 100 %, con aceptación humana definitiva. El holdout es sintético, nuevo tras congelar comportamiento, creado dentro del proyecto y sin revisión humana independiente de etiquetas todavía. El hash congela bytes, no equivale a aprobación de etiquetas.
+
+Los dos manifiestos de esquema 3 mantienen initialize false, execute false, identityHash null y approvalReference null. El holdout registra FROZEN_PENDING_HUMAN_REVIEW, que bloquea cualquier autorización operativa aun si se altera un booleano. No existe inicialización ni ledger de estas cohortes. Las autorizaciones vinculan cohorte, hash, identidad y presupuesto; una autorización de la otra cohorte no sirve. No se permite seleccionar rutas arbitrarias ni usar --force, y se mantienen journals, bloqueos y parciales sin reanudación.
+
+Comprobaciones actuales sin red ni inferencias:
+
+```sh
+npm run eval:tool-calling -- --validate --cohort KNOWN_REGRESSION
+npm run eval:tool-calling -- --validate --cohort INDEPENDENT_HOLDOUT
+npm run eval:tool-calling -- --identity --cohort KNOWN_REGRESSION
+npm run eval:tool-calling -- --identity --cohort INDEPENDENT_HOLDOUT
+```
+
+`--identity` comprueba fuentes/build e inventario congelado y utiliza metadatos públicos conservados en `i006-r7-model-metadata.json`. No consulta Ollama. Solo se normaliza la ruta local FROM del modelfile al digest ya fijado; plantillas, parámetros y capacidades permanecen intactos. El hash del descriptor normalizado coincide con el que se comprobará con datos en vivo. Las identidades tras el commit de preparación no acreditan disponibilidad actual ni dedicación exclusiva. Cualquier cambio relevante o commit posterior exige recalcular y obtener aprobación.
+
+Procedimiento **futuro, actualmente no autorizado**:
+
+1. Revisar los 60 casos del holdout, etiquetas, fixtures y pares; aprobar explícitamente el contenido congelado y las dos identidades. Registrar el estado de revisión aprobado únicamente bajo autorización humana.
+2. Autorizar por separado la inicialización de cada cohorte: establecer identityHash aprobado, referencia humana propia e initialize true, con execute false. Ejecutar una vez `npm run eval:tool-calling -- --initialize --cohort COHORTE` y cerrar initialize. El camino operativo verifica metadatos de Ollama en vivo; un cambio de descriptor/digest/version/configuración bloquea. No hay inferencias al inicializar.
+3. Verificar aislamiento/dedicación de Ollama y aprobar expresamente el presupuesto y la única ejecución de KNOWN_REGRESSION. Activar solo su execute y ejecutar una vez `npm run eval:tool-calling -- --execute --cohort KNOWN_REGRESSION`. Cerrar execute después, conservar todos los controles y revisar el informe. No repetir ni reanudar.
+4. Tras autorización expresa independiente, realizar el mismo procedimiento para INDEPENDENT_HOLDOUT con su propio manifiesto y presupuesto. No se activa implícitamente por completar KNOWN_REGRESSION. Orden propuesto: regresión y después holdout; cada una en orden del dataset, sin warm-up ni reintentos.
+5. Revisar ambos informes por separado. En regresión, experimentalGate sigue NOT_EVALUATED aunque thresholdGate pase; en holdout, experimentalGate/independentValidation describen solo el holdout bajo SYNTHETIC_HOLDOUT_ONLY. Los dos enumeran requiredCohorts y mantienen iterationAcceptance NOT_GRANTED. Ningún informe por sí solo acepta I006 ni permite cambiar producción.
+
+Cada reserva consume uno o dos slots según referencias elegibles; no se devuelve capacidad por ausencia de respuesta. Máximo conjunto de planificación: 209 inferencias; no es un presupuesto operativo autorizado. Errores técnicos detienen la cohorte conservando parciales; no hay reinicio, reanudación ni recuperación automática. Segmentos CODE/LLM y diagnósticos siguen informativos sin nuevos umbrales. Una pérdida de persistencia, incertidumbre de envío o cambio de identidad impide continuar.
+
+Tiempo: las latencias exploratorias Qwen 8B de decisión rondaron 0,6–1,0 s en caliente, con cargas iniciales de varios segundos. No miden las clasificaciones finales de R7 ni las longitudes nuevas: solo permiten una orientación de varios minutos, no una predicción garantizada. La cota de timeout de inferencias es 209 × 45 s = 156,75 minutos, sin incluir herramienta, preparación ni persistencia y limitada además por el deadline de 90 s de cada caso. No implica que los 120 casos puedan completar bajo cualquier carga.
+
+Verificación de esta preparación: `npm run verify` **326/326** y suites dirigidas **78/78**, con dobles de prueba y sin consultar Ollama; no son resultados experimentales. Los 38 archivos del sistema y la declaración candidata coinciden con el commit técnico congelado. Ambos manifiestos permanecen desactivados y sin identidad aprobada, sin directorios de controles creados. Las identidades definitivas se calcularán después del commit de preparación, para evitar una referencia circular en documentos versionados.

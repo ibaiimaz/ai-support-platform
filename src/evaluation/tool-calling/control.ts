@@ -1,5 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { classificationProtocolId, plannedPhases } from './protocol.js';
+import {
+  classificationProtocolId,
+  plannedPhases,
+  cohortSettings,
+  type EvaluationCohort,
+} from './protocol.js';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -17,16 +22,17 @@ import type {
 } from './types.js';
 
 export interface Authorization {
-  schemaVersion: 2;
+  schemaVersion: 3;
+  cohort: EvaluationCohort;
   protocolId: typeof classificationProtocolId;
   experiment: 'I006';
-  datasetReview: 'PENDING_HUMAN_REVIEW' | 'APPROVED_FROZEN';
+  datasetReview: 'PENDING_HUMAN_REVIEW' | 'FROZEN_PENDING_HUMAN_REVIEW' | 'APPROVED_FROZEN';
   datasetHash: string | null;
   initialize: boolean;
   execute: boolean;
   identityHash: string | null;
   approvalReference: string | null;
-  maximumInferences: 104;
+  maximumInferences: number;
 }
 
 const hash = { type: ['string', 'null'], pattern: '^[a-f0-9]{64}$' };
@@ -35,6 +41,7 @@ const validate = new Ajv({ strictTypes: false }).compile<Authorization>({
   additionalProperties: false,
   required: [
     'schemaVersion',
+    'cohort',
     'protocolId',
     'experiment',
     'datasetReview',
@@ -46,16 +53,19 @@ const validate = new Ajv({ strictTypes: false }).compile<Authorization>({
     'maximumInferences',
   ],
   properties: {
-    schemaVersion: { const: 2 },
+    schemaVersion: { const: 3 },
+    cohort: { enum: ['KNOWN_REGRESSION', 'INDEPENDENT_HOLDOUT'] },
     protocolId: { const: classificationProtocolId },
     experiment: { const: 'I006' },
-    datasetReview: { enum: ['PENDING_HUMAN_REVIEW', 'APPROVED_FROZEN'] },
+    datasetReview: {
+      enum: ['PENDING_HUMAN_REVIEW', 'FROZEN_PENDING_HUMAN_REVIEW', 'APPROVED_FROZEN'],
+    },
     datasetHash: hash,
     initialize: { type: 'boolean' },
     execute: { type: 'boolean' },
     identityHash: hash,
     approvalReference: { type: ['string', 'null'], minLength: 1 },
-    maximumInferences: { const: 104 },
+    maximumInferences: { type: 'integer', minimum: 60, maximum: 120 },
   },
 });
 
@@ -73,6 +83,9 @@ export function requireAuthorization(
   phase: 'initialize' | 'execute',
 ) {
   if (
+    authorization.cohort !== identity.cohort ||
+    authorization.maximumInferences !== identity.maximumInferences ||
+    identity.maximumInferences !== cohortSettings(identity.cohort).maximumInferences ||
     authorization.protocolId !== classificationProtocolId ||
     identity.protocolId !== classificationProtocolId ||
     authorization.datasetReview !== 'APPROVED_FROZEN' ||
@@ -118,13 +131,16 @@ export async function withControl<T>(
     identity,
     initialize ? 'initialize' : 'execute',
   );
+  if (dataset.id !== cohortSettings(identity.cohort).datasetId) {
+    throw new Error('Dataset does not belong to authorized cohort');
+  }
   await mkdir(directory, { recursive: true, mode: 0o700 });
   return locked(directory, async () => {
     const maximumInferences = dataset.examples.reduce(
       (sum, example) => sum + plannedPhases(example.description).length,
       0,
     );
-    if (maximumInferences > 104) {
+    if (maximumInferences > identity.maximumInferences) {
       throw new Error('Dataset exceeds approved hybrid budget');
     }
     const identityHash = sha256(JSON.stringify(identity));

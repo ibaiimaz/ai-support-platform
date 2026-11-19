@@ -19,7 +19,8 @@ async function setup() {
   const directory = join(root, 'controls');
   const authorizationPath = join(root, 'authorization.json');
   const authorization: Authorization = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    cohort: identity.cohort,
     protocolId: 'I006-HYBRID-CLASSIFICATION-V1',
     experiment: 'I006',
     datasetReview: 'APPROVED_FROZEN',

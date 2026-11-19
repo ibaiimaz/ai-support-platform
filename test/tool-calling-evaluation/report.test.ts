@@ -29,6 +29,7 @@ test('AC-26: private report is hash-verifiable, no overwrite, no descriptions, f
     assert.equal(serialized.deterministicGate, 'NOT_EVALUATED');
     assert.deepEqual(serialized.assessment, {
       scope: 'COHORT_THRESHOLDS_ONLY',
+      requiredCohorts: ['KNOWN_REGRESSION', 'INDEPENDENT_HOLDOUT'],
       independentValidation: 'NOT_EVALUATED',
       iterationAcceptance: 'NOT_GRANTED',
     });

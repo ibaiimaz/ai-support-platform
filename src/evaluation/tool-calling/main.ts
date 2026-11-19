@@ -17,8 +17,8 @@ import {
   classificationCohort,
   candidateModel,
   plannedPhases,
-  classificationAuthorizationFile,
-  classificationReportsDirectory,
+  cohortSettings,
+  type EvaluationCohort,
 } from './protocol.js';
 import {
   restrictedIncidentLookupTool,
@@ -79,23 +79,66 @@ async function metadata(baseUrl: string, path: string, body?: unknown): Promise<
   return response.json();
 }
 
+function modelMetadataHash(show: unknown): string {
+  if (typeof show !== 'object' || show === null || Array.isArray(show)) {
+    throw new Error('Invalid model metadata');
+  }
+  const descriptor = { ...show } as Record<string, unknown>;
+  // The local blob path is private and machine-specific, not a model parameter.
+  if (typeof descriptor.modelfile === 'string') {
+    descriptor.modelfile = descriptor.modelfile.replace(
+      /^FROM\s+.+$/gm,
+      `FROM sha256:${candidateModel.digest}`,
+    );
+  }
+  return sha256(JSON.stringify(descriptor));
+}
+
 export async function effectiveIdentity(
   root: string,
   datasetHash: string,
   code = captureCodeIdentity(root, snapshotBuild(join(root, 'dist'))),
+  cohort: EvaluationCohort = classificationCohort,
+  offline = false,
 ): Promise<RunIdentity> {
   code.verify();
-  const frozen = await loadDataset(join(root, 'evals/datasets/incidents-tool-calling-v1.json'));
-  if (frozen.hash !== datasetHash) {
+  const freezeBytes = await readFile(join(root, 'evals/experiments/i006-r7-system-freeze.json'));
+  const freeze = JSON.parse(freezeBytes.toString('utf8')) as { files: Record<string, string> };
+  for (const [path, expected] of Object.entries(freeze.files)) {
+    if (sha256(await readFile(join(root, path))) !== expected) {
+      throw new Error('Frozen R7 behavior changed');
+    }
+  }
+  const settings = cohortSettings(cohort);
+  const frozen = await loadDataset(join(root, 'evals/datasets', settings.datasetFile));
+  if (
+    frozen.hash !== datasetHash ||
+    frozen.dataset.id !== settings.datasetId ||
+    frozen.dataset.examples.reduce(
+      (sum, example) => sum + plannedPhases(example.description).length,
+      0,
+    ) !== settings.maximumInferences
+  ) {
     throw new Error('Dataset identity changed');
   }
   const config = candidateConfiguration();
-  const tags = (await metadata(config.baseUrl, '/api/tags')) as {
+  // Offline preparation uses public metadata retained before holdout authoring.
+  // Operational initialization/execution still verifies the live provider.
+  const retained = offline
+    ? (JSON.parse(
+        await readFile(join(root, 'evals/experiments/i006-r7-model-metadata.json'), 'utf8'),
+      ) as { tags: unknown; version: unknown; show: unknown })
+    : undefined;
+  const tags = (retained ? retained.tags : await metadata(config.baseUrl, '/api/tags')) as {
     models?: { name: string; digest: string }[];
   };
   const model = tags.models?.find((item) => item.name === config.model);
-  const version = (await metadata(config.baseUrl, '/api/version')) as { version?: string };
-  const show = await metadata(config.baseUrl, '/api/show', { model: config.model });
+  const version = (
+    retained ? retained.version : await metadata(config.baseUrl, '/api/version')
+  ) as { version?: string };
+  const show = retained
+    ? retained.show
+    : await metadata(config.baseUrl, '/api/show', { model: config.model });
   if (
     !model ||
     model.digest !== candidateModel.digest ||
@@ -106,11 +149,14 @@ export async function effectiveIdentity(
     throw new Error('Cannot establish model identity');
   }
   return {
+    cohort,
+    systemFreezeHash: sha256(freezeBytes),
+    maximumInferences: settings.maximumInferences,
     datasetHash,
     model: config.model,
     modelDigest: model.digest,
     ollamaVersion: version.version,
-    modelMetadataHash: sha256(JSON.stringify(show)),
+    modelMetadataHash: modelMetadataHash(show),
     protocolId: classificationProtocolId,
     decisionPromptHash: sha256(lookupDecisionInstructions),
     classificationPromptHash: sha256(classificationFinalInstructions),
@@ -229,19 +275,30 @@ export async function runControlledEvaluation(
 
 export async function main(root = process.cwd(), args = process.argv.slice(2)): Promise<number> {
   const action = args[0];
+  const cohort = args.length === 1 ? classificationCohort : args[2];
   if (
-    args.length !== 1 ||
+    (args.length !== 1 && (args.length !== 3 || args[1] !== '--cohort')) ||
+    (cohort !== 'KNOWN_REGRESSION' && cohort !== 'INDEPENDENT_HOLDOUT') ||
     !['--validate', '--identity', '--initialize', '--execute'].includes(action ?? '')
   ) {
-    throw new Error('Use one explicit I006 action');
+    throw new Error('Use one explicit I006 action and optional --cohort');
   }
-  const datasetPath = join(root, 'evals/datasets/incidents-tool-calling-v1.json');
+  const selectedCohort = cohort;
+  const settings = cohortSettings(selectedCohort);
+  const datasetPath = join(root, 'evals/datasets', settings.datasetFile);
   const { dataset, hash } = await loadDataset(datasetPath);
+  const authorizationPath = join(root, 'evals/experiments', settings.authorizationFile);
+  if (dataset.id !== settings.datasetId) {
+    throw new Error('Cohort dataset mismatch');
+  }
   if (action === '--validate') {
-    const authorization = await readAuthorization(
-      join(root, 'evals/experiments', classificationAuthorizationFile),
-    );
-    if (authorization.datasetHash !== hash || authorization.datasetReview !== 'APPROVED_FROZEN') {
+    const authorization = await readAuthorization(authorizationPath);
+    if (
+      authorization.datasetHash !== hash ||
+      authorization.cohort !== selectedCohort ||
+      authorization.maximumInferences !== settings.maximumInferences ||
+      !['APPROVED_FROZEN', 'FROZEN_PENDING_HUMAN_REVIEW'].includes(authorization.datasetReview)
+    ) {
       throw new Error('Frozen dataset identity mismatch');
     }
     console.log(
@@ -251,7 +308,7 @@ export async function main(root = process.cwd(), args = process.argv.slice(2)): 
         cases: dataset.examples.length,
         review: authorization.datasetReview,
         datasetHash: hash,
-        cohort: classificationCohort,
+        cohort: selectedCohort,
         maximumInferences: dataset.examples.reduce(
           (sum, example) => sum + plannedPhases(example.description).length,
           0,
@@ -260,23 +317,43 @@ export async function main(root = process.cwd(), args = process.argv.slice(2)): 
     );
     return 0;
   }
-  const authorizationPath = join(root, 'evals/experiments', classificationAuthorizationFile);
   const authorization = await readAuthorization(authorizationPath);
   if (
     action !== '--identity' &&
-    !authorization[action === '--initialize' ? 'initialize' : 'execute']
+    (!authorization[action === '--initialize' ? 'initialize' : 'execute'] ||
+      authorization.cohort !== selectedCohort ||
+      authorization.datasetHash !== hash ||
+      authorization.datasetReview !== 'APPROVED_FROZEN' ||
+      authorization.identityHash === null ||
+      authorization.approvalReference === null ||
+      authorization.maximumInferences !== settings.maximumInferences)
   ) {
     throw new Error('I006 action is disabled');
   }
   const code = captureCodeIdentity(root, snapshotBuild(join(root, 'dist')));
-  const identity = await effectiveIdentity(root, hash, code);
+  const identity = await effectiveIdentity(
+    root,
+    hash,
+    code,
+    selectedCohort,
+    action === '--identity',
+  );
   if (action === '--identity') {
     console.log(
-      JSON.stringify({ identity, identityHash: sha256(JSON.stringify(identity)) }, null, 2),
+      JSON.stringify(
+        {
+          identity,
+          identityHash: sha256(JSON.stringify(identity)),
+          metadataVerification: 'OFFLINE_RETAINED_METADATA',
+          liveProviderVerified: false,
+        },
+        null,
+        2,
+      ),
     );
     return 0;
   }
-  const reports = join(root, 'evals/reports', classificationReportsDirectory);
+  const reports = join(root, 'evals/reports', settings.reportsDirectory);
   const controls = join(reports, 'controls');
   let exitCode = 1;
   await withControl(
@@ -296,7 +373,7 @@ export async function main(root = process.cwd(), args = process.argv.slice(2)): 
         async verifyCase() {
           if (
             (await loadDataset(datasetPath)).hash !== hash ||
-            JSON.stringify(await effectiveIdentity(root, hash, code)) !==
+            JSON.stringify(await effectiveIdentity(root, hash, code, selectedCohort)) !==
               JSON.stringify(identity) ||
             JSON.stringify(candidateConfiguration()) !== JSON.stringify(config)
           ) {

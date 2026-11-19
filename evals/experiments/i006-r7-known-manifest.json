@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 3,
+  "protocolId": "I006-HYBRID-CLASSIFICATION-V1",
+  "experiment": "I006",
+  "datasetReview": "APPROVED_FROZEN",
+  "datasetHash": "fa5b19d7783417220d2b852eabe9260352ba808a4307676f6a20fa86a4562490",
+  "initialize": false,
+  "execute": false,
+  "identityHash": null,
+  "approvalReference": null,
+  "maximumInferences": 104,
+  "cohort": "KNOWN_REGRESSION"
+}

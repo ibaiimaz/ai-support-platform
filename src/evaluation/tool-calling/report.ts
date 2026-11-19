@@ -1,4 +1,4 @@
-import { classificationProtocolId, classificationCohort, plannedPhases } from './protocol.js';
+import { classificationProtocolId, cohortSettings, plannedPhases } from './protocol.js';
 import { invalidResponseDiagnostics } from '../../application/classification-errors.js';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -37,7 +37,7 @@ const validateResult = new Ajv({ strictTypes: false }).compile<CaseResult>(
         }),
       }),
       failurePhase: { enum: [null, 'decision', 'tool', 'classification', 'control'] },
-      id: { type: 'string', pattern: '^I006-[0-9]{3}$' },
+      id: { type: 'string', pattern: '^I006-(?:H-)?[0-9]{3}$' },
       outcome: { enum: ['COMPLETED', 'POLICY_VIOLATION', 'TECHNICAL_ERROR'] },
       observation: object({
         decisionSource: { enum: ['CODE', 'LLM'] },
@@ -98,7 +98,10 @@ export function buildReport(
   startedAt: string,
   runId: string = randomUUID(),
 ): EvaluationReport {
-  if (identity.protocolId !== classificationProtocolId) {
+  if (
+    identity.protocolId !== classificationProtocolId ||
+    dataset.id !== cohortSettings(identity.cohort).datasetId
+  ) {
     throw new Error('Incompatible evaluation protocol');
   }
   for (const result of results) {
@@ -173,11 +176,22 @@ export function buildReport(
       version: dataset.version,
       cases: dataset.examples.length,
       pairs: dataset.counterfactualPairs.length,
-      cohort: classificationCohort,
+      cohort: identity.cohort,
     },
     assessment: {
-      scope: 'COHORT_THRESHOLDS_ONLY',
-      independentValidation: 'NOT_EVALUATED',
+      scope:
+        identity.cohort === 'KNOWN_REGRESSION'
+          ? 'COHORT_THRESHOLDS_ONLY'
+          : 'SYNTHETIC_HOLDOUT_ONLY',
+      requiredCohorts: ['KNOWN_REGRESSION', 'INDEPENDENT_HOLDOUT'],
+      independentValidation:
+        identity.cohort === 'KNOWN_REGRESSION'
+          ? 'NOT_EVALUATED'
+          : !complete
+            ? 'INCOMPLETE'
+            : passed
+              ? 'PASSED'
+              : 'FAILED',
       iterationAcceptance: 'NOT_GRANTED',
     },
     results: structuredClone(results),
@@ -191,7 +205,14 @@ export function buildReport(
     deterministicGate: 'NOT_EVALUATED',
     thresholdGate: !complete ? 'INCOMPLETE' : passed ? 'PASSED' : 'FAILED',
     // Known regression thresholds cannot satisfy independent experimental acceptance.
-    experimentalGate: 'NOT_EVALUATED',
+    experimentalGate:
+      identity.cohort === 'KNOWN_REGRESSION'
+        ? 'NOT_EVALUATED'
+        : !complete
+          ? 'INCOMPLETE'
+          : passed
+            ? 'PASSED'
+            : 'FAILED',
     totalLatencyMs: results.reduce((sum, result) => sum + result.latencyMs, 0),
   };
 }

@@ -4,9 +4,29 @@ export const classificationCohort = 'KNOWN_REGRESSION' as const;
 
 export const classificationProtocolId = 'I006-HYBRID-CLASSIFICATION-V1' as const;
 
-export const classificationAuthorizationFile = 'i006-hybrid-manifest.json';
+export type EvaluationCohort = 'KNOWN_REGRESSION' | 'INDEPENDENT_HOLDOUT';
 
-export const classificationReportsDirectory = 'i006-hybrid';
+export function cohortSettings(cohort: EvaluationCohort) {
+  if (cohort === 'KNOWN_REGRESSION') {
+    return {
+      datasetId: 'incidents-tool-calling-es-v1',
+      datasetFile: 'incidents-tool-calling-v1.json',
+      authorizationFile: 'i006-r7-known-manifest.json',
+      reportsDirectory: 'i006-r7-known',
+      maximumInferences: 104,
+    } as const;
+  }
+  if (cohort === 'INDEPENDENT_HOLDOUT') {
+    return {
+      datasetId: 'incidents-tool-calling-holdout-es-v1',
+      datasetFile: 'incidents-tool-calling-holdout-v1.json',
+      authorizationFile: 'i006-r7-holdout-manifest.json',
+      reportsDirectory: 'i006-r7-holdout',
+      maximumInferences: 105,
+    } as const;
+  }
+  throw new Error('Unknown I006 cohort');
+}
 
 export const candidateModel = {
   model: 'qwen3:8b',

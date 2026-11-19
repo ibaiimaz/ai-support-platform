@@ -24,7 +24,7 @@ const expectedFinal = {
 const validate = new Ajv().compile<EvaluationDataset>(
   object({
     schemaVersion: { const: 1 },
-    id: { const: 'incidents-tool-calling-es-v1' },
+    id: { enum: ['incidents-tool-calling-es-v1', 'incidents-tool-calling-holdout-es-v1'] },
     version: { type: 'integer', minimum: 1 },
     reviewStatus: { const: 'CANDIDATE' },
     examples: {
@@ -32,7 +32,7 @@ const validate = new Ajv().compile<EvaluationDataset>(
       minItems: 60,
       maxItems: 60,
       items: object({
-        id: { type: 'string', pattern: '^I006-[0-9]{3}$' },
+        id: { type: 'string', pattern: '^I006-(?:H-)?[0-9]{3}$' },
         group: { enum: groups },
         description: { ...text, maxLength: 4000 },
         toolExpected: { type: 'boolean' },
@@ -102,7 +102,9 @@ export function parseDataset(bytes: string): EvaluationDataset {
   let notFound = 0;
   let unavailable = 0;
   for (const example of dataset.examples) {
-    if (/^I006-[0-9]{3}$/.exec(example.id)?.[0] !== example.id) {
+    const pattern =
+      dataset.id === 'incidents-tool-calling-es-v1' ? /^I006-[0-9]{3}$/ : /^I006-H-[0-9]{3}$/;
+    if (pattern.exec(example.id)?.[0] !== example.id) {
       throw new Error('Invalid complete case ID');
     }
     if (

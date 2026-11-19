@@ -12,6 +12,9 @@ export async function candidate(): Promise<EvaluationDataset> {
 }
 
 export const identity: RunIdentity = {
+  cohort: 'KNOWN_REGRESSION',
+  systemFreezeHash: 'e'.repeat(64),
+  maximumInferences: 104,
   datasetHash: 'a'.repeat(64),
   model: 'simulated',
   modelDigest: 'b'.repeat(64),

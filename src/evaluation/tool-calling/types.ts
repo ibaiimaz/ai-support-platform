@@ -1,5 +1,5 @@
 import type { CodeIdentity } from '../independent-validation/code-state.js';
-import type { classificationProtocolId } from './protocol.js';
+import type { classificationProtocolId, EvaluationCohort } from './protocol.js';
 import type { InvalidResponseDiagnostic } from '../../application/classification-errors.js';
 import type { Category } from '../../domain/classification.js';
 import type { Incident } from '../../domain/incident.js';
@@ -38,7 +38,7 @@ export interface EvaluationCase {
 
 export interface EvaluationDataset {
   schemaVersion: 1;
-  id: 'incidents-tool-calling-es-v1';
+  id: 'incidents-tool-calling-es-v1' | 'incidents-tool-calling-holdout-es-v1';
   version: number;
   reviewStatus: 'CANDIDATE';
   examples: EvaluationCase[];
@@ -128,6 +128,9 @@ export interface EvaluationMetrics {
 }
 
 export interface RunIdentity {
+  cohort: EvaluationCohort;
+  systemFreezeHash: string;
+  maximumInferences: number;
   datasetHash: string;
   model: string;
   modelDigest: string;
@@ -161,11 +164,12 @@ export interface EvaluationReport {
     version: number;
     cases: number;
     pairs: number;
-    cohort: 'KNOWN_REGRESSION' | 'INDEPENDENT';
+    cohort: EvaluationCohort;
   };
   assessment: {
-    scope: 'COHORT_THRESHOLDS_ONLY';
-    independentValidation: 'NOT_EVALUATED';
+    scope: 'COHORT_THRESHOLDS_ONLY' | 'SYNTHETIC_HOLDOUT_ONLY';
+    requiredCohorts: EvaluationCohort[];
+    independentValidation: 'NOT_EVALUATED' | 'INCOMPLETE' | 'FAILED' | 'PASSED';
     iterationAcceptance: 'NOT_GRANTED';
   };
   results: CaseResult[];
