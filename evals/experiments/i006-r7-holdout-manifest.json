@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "protocolId": "I006-HYBRID-CLASSIFICATION-V1",
   "experiment": "I006",
-  "datasetReview": "FROZEN_PENDING_HUMAN_REVIEW",
+  "datasetReview": "APPROVED_FROZEN",
   "datasetHash": "58d307b94591ccc85b785d028d2c23878835081f982cb6cab3647bf0aeafc343",
   "initialize": false,
   "execute": false,

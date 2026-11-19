@@ -2,15 +2,15 @@
 
 ## Estado vigente: I006 revisión 7 — 2026-11-19
 
-La revisión independiente final ha concluido **APPROVED**, incluido el hallazgo MEDIUM del alcance de cohorte. La implementación queda aprobada técnicamente para preparar la validación; sustituye las declaraciones anteriores de revisión técnica pendiente. I006 permanece **Implemented**, sin aceptación definitiva ni puerta experimental superada.
+Implementación y revisión técnica de R7 **aprobadas**. Cierre de esta fase: **KNOWN_REGRESSION INCOMPLETE**, **INDEPENDENT_HOLDOUT NOT_EXECUTED**. I006 permanece **Implemented**: validación experimental no acreditada, aceptación funcional no concedida y despliegue no autorizado. No se realizarán más experimentos ni modificaciones funcionales en esta fase; todos los permisos de inicialización y ejecución están desactivados.
 
 Diseño aprobado e implementación autorizada de la [arquitectura híbrida](../../specs/iterations/006-tool-calling.md#19-revisión-7--diseño-aprobado-implementación-autorizada). Las descripciones de revisiones anteriores que siguen se conservan como antecedentes, no como protocolo actual.
 
 La descripción original determina las referencias elegibles: sin IDs válidos, NO_LOOKUP desde backend y una inferencia final estructurada; con IDs, decisión nativa con enum y validación de pertenencia posterior, consulta opcional y clasificación final (dos inferencias). Máximo una herramienta, sin reintentos, 45/5/90 s; HTTP y rutas I002–I005 intactos. El texto libre de decisión no se utiliza.
 
-Qwen3 8B Q4_K_M es candidato, digest `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`, temperatura 0, think false. La composición de evaluación lo prepara explícitamente; `loadConfig` conserva Llama por defecto, sin despliegue ni promoción. La adición de definiciones al prompt es hipótesis no evaluada.
+Qwen3 8B Q4_K_M es candidato, digest `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`, temperatura 0, think false. La composición de evaluación lo prepara explícitamente; `loadConfig` conserva Llama por defecto, sin despliegue ni promoción. La mejora del prompt no está validada experimentalmente; el parcial no permite atribuirle eficacia.
 
-El protocolo de aplicación `I006-HYBRID-CLASSIFICATION-V1` prepara ahora dos cohortes separadas, KNOWN_REGRESSION (104 inferencias) e INDEPENDENT_HOLDOUT (105), con manifiestos `i006-r7-known-manifest.json` e `i006-r7-holdout-manifest.json` y directorios propios. Permisos false e identidades null, sin inicialización. La sección 20 de la especificación I006 y la guía operativa describen la preparación vigente. El conjunto original es regresión conocida; el nuevo holdout sintético está congelado y pendiente de revisión humana de etiquetas. No se mezclan métricas, no se promociona el candidato y no se reabren experimentos ni diagnósticos cerrados. I006 permanece Implemented y pendiente de aceptación experimental y humana definitiva.
+El protocolo conserva dos cohortes separadas y sus manifiestos. KNOWN_REGRESSION terminó con 12/60 casos evaluables, 12/12 clasificaciones finales correctas, 10/10 decisiones deterministas correctas, dos consultas innecesarias y un error MIXED_CONTENT_AND_TOOLS. El holdout no se inicializó ni ejecutó; no hay evidencia adversarial ni pares contrafactuales completos. Estos resultados parciales no se extrapolan. La sección 21 de la especificación I006 registra el cierre y las líneas de mejora diferidas. Se preservan las autorizaciones utilizadas y todas las evidencias históricas, sin reactivar permisos ni promover el candidato.
 
 Estado normativo: [I006, revisión 6](../../specs/iterations/006-tool-calling.md), aprobada el **2026-11-18**, y [ADR-003](../../specs/adr/ADR-003-separate-lookup-decision-and-classification.md). La separación de decisión y clasificación está implementada con tests deterministas y aceptada por el responsable el 2026-11-18 tras segunda revisión independiente APPROVED; la evaluación real sigue pendiente. Como antecedente, los comandos de revisión 6 utilizaban su propio protocolo; el CLI actual prepara exclusivamente revisión 7 y no reabren la ejecución original.
 
@@ -247,7 +247,7 @@ El conjunto de 60 casos es regresión conocida, no holdout; se preserva íntegro
 
 Implementación R7: verificación integral 317/317 y comprobación adicional 51/51, sin inferencias reales. Identidad efectiva calculada mediante metadatos locales y comprobación fuente/build: `e3318481709c2aa03a2757fdd1bfd9f63bed202c05cfb02ec227b1d91ca10fd0`. Referencia Git `ab4df43` más fuentes/build modificados sin commit; no representa una identidad humana aprobada. Un commit posterior o cambio relevante exige recalcularla. El manifiesto conserva identityHash null, initialize false y execute false. No existe el directorio de controles R7.
 
-## Preparación actual: dos cohortes separadas
+## Antecedente de preparación: dos cohortes separadas
 
 La revisión técnica final de R7 está APPROVED. El comportamiento quedó congelado en `bcb30b5` antes de crear el [holdout completo para revisión humana](i006-holdout-review.md); el inventario es `i006-r7-system-freeze.json`. Esta sección sustituye los nombres operativos de la preparación de una sola cohorte anterior, que se conserva históricamente sin reutilizar sus controles.
 
@@ -284,3 +284,17 @@ Cada reserva consume uno o dos slots según referencias elegibles; no se devuelv
 Tiempo: las latencias exploratorias Qwen 8B de decisión rondaron 0,6–1,0 s en caliente, con cargas iniciales de varios segundos. No miden las clasificaciones finales de R7 ni las longitudes nuevas: solo permiten una orientación de varios minutos, no una predicción garantizada. La cota de timeout de inferencias es 209 × 45 s = 156,75 minutos, sin incluir herramienta, preparación ni persistencia y limitada además por el deadline de 90 s de cada caso. No implica que los 120 casos puedan completar bajo cualquier carga.
 
 Verificación de esta preparación: `npm run verify` **326/326** y suites dirigidas **78/78**, con dobles de prueba y sin consultar Ollama; no son resultados experimentales. Los 38 archivos del sistema y la declaración candidata coinciden con el commit técnico congelado. Ambos manifiestos permanecen desactivados y sin identidad aprobada, sin directorios de controles creados. Las identidades definitivas se calcularán después del commit de preparación, para evitar una referencia circular en documentos versionados.
+
+## Cierre vigente de I006 R7
+
+Estado **Implemented**: implementación y revisión técnica aprobadas, validación experimental no acreditada, aceptación funcional no concedida y despliegue no autorizado. KNOWN_REGRESSION **INCOMPLETE**, INDEPENDENT_HOLDOUT **NOT_EXECUTED**. La [sección 21 de I006](../../specs/iterations/006-tool-calling.md#21-cierre-documental-y-operativo-de-r7--implemented-no-validada-experimentalmente) es el registro canónico de resultados, limitaciones y mejoras diferidas. Las instrucciones de preparación anteriores son históricas; no autorizan más ejecuciones en esta fase.
+
+La regresión registró 12/60 casos evaluables: 12/12 finales correctos y 10/10 decisiones deterministas correctas; dos consultas innecesarias de la ruta LLM y parada técnica MIXED_CONTENT_AND_TOOLS en I006-013. No hay pares completos, adversariales ni resultados del holdout. Los porcentajes parciales no se extrapolan. Informe original privado y SHA-256 registrados en la especificación; permanecen intactos los 13 checkpoints, ledger, marcador y snapshots.
+
+Cierre comprobable sin Ollama: ambos initialize/execute false; ledger de regresión CLOSED, pending null y lock ausente. Se mantienen 16 slots reservados y 15 intentos enviados, sin reintentos o capacidad reutilizable. No existe directorio de ejecución del holdout. La identidad y referencia utilizadas de KNOWN_REGRESSION permanecen en el manifiesto; no deben restaurarse a null para satisfacer una expectativa de preparación. APPROVED_FROZEN del holdout refleja aprobación humana del conjunto tras revisión asistida por ChatGPT, no etiquetado humano independiente.
+
+Los futuros cambios del protocolo nativo, decisión semántica, modelo/mecanismo u observabilidad segura requieren otro alcance autorizado. Este cierre no implementa nada de ello, no inicia otra iteración ni permite reanudar o reinicializar experimentos. El default productivo no cambia y no hay autorización de despliegue.
+
+Verificación del cierre documental: formato, lint y build correctos; suite completa 325/326. El único test fallido presupone identityHash null antes de la inicialización en el manifiesto real. La identidad de la autorización usada se conserva deliberadamente y no debe borrarse para conseguir un resultado verde. No se modifican tests o código en este cierre; la suite íntegra no se declara satisfactoria. Los permisos están desactivados y las evidencias originales permanecen intactas.
+
+La comprobación dirigida de controles, métricas, informes, orquestación y adaptador pasa **94/94** en el cierre. No sustituye ni oculta el resultado 325/326 de la suite completa. El inventario privado y los 412 archivos protegidos de código, tests, datasets y evidencias conservan sus bytes.

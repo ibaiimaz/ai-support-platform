@@ -4,11 +4,11 @@
 
 **Estado:** Implemented
 
-**Aprobación técnica R7:** revisión independiente final APPROVED; hallazgo MEDIUM resuelto. Autorizada la preparación de validación, no la ejecución ni la aceptación definitiva. Las referencias de revisión independiente pendiente más abajo recogen el estado anterior a esta aprobación.
+**Cierre R7:** implementación y revisión técnica aprobadas; KNOWN_REGRESSION INCOMPLETE, INDEPENDENT_HOLDOUT NOT_EXECUTED. Validación experimental no acreditada, aceptación funcional no concedida y despliegue no autorizado. Estado Implemented, no Verified. Véase la sección 21. Las declaraciones de preparación o revisión pendientes que siguen se conservan como trazabilidad histórica.
 
 **Versión:** Revisión 7 — consulta híbrida y clasificación estructurada
 
-**Aprobación de diseño de revisión 7:** 2026-11-19; implementación autorizada, pendiente de revisión independiente y validación experimental.
+**Aprobación de diseño de revisión 7:** 2026-11-19; implementación y revisión técnica aprobadas; validación experimental no acreditada.
 
 La revisión 6 y su aceptación de implementación se conservan como antecedentes. Las reglas de revisión 7 que siguen sustituyen expresamente sus obligaciones de dos inferencias en todos los casos. No se declara aceptada ni Verified I006.
 
@@ -988,3 +988,49 @@ El mismo runner recibe un selector explícito `--cohort KNOWN_REGRESSION|INDEPEN
 En KNOWN_REGRESSION se mantiene experimentalGate NOT_EVALUATED: PASSED de thresholdGate solo significa superar los umbrales de regresión. En INDEPENDENT_HOLDOUT, thresholdGate y experimentalGate describen los umbrales y la evidencia experimental de ese holdout, bajo scope SYNTHETIC_HOLDOUT_ONLY. Ningún PASSED representa aceptación global: los informes declaran requiredCohorts y mantienen iterationAcceptance NOT_GRANTED, puerta determinista separada y segmentos DESCRIPTIVE_ONLY sin umbrales adicionales. La revisión conjunta de las dos cohortes es humana; no se introduce un agregador que oculte deficiencias.
 
 La preparación actual prohíbe consultar Ollama. `--identity` se calcula sin red desde metadatos públicos conservados de la selección; se identifica el hash íntegro del descriptor nativo. No acredita disponibilidad ni identidad en vivo. Antes de inicializar o ejecutar en el futuro, el camino operativo verificará metadatos en vivo y deberá coincidir con la identidad aprobada; un cambio bloqueará. El código/build y las fuentes congeladas se verifican localmente. Tras el commit de preparación se recalculan ambas identidades, sin rellenar ni activar permisos.
+
+## 21. Cierre documental y operativo de R7 — Implemented, no validada experimentalmente
+
+Este cierre no equivale a aceptación funcional. La implementación y su revisión técnica independiente están aprobadas. I006 permanece **Implemented**, no Verified; la validación experimental **no está acreditada**, la aceptación funcional **no se concede** y el despliegue **no está autorizado**. No habrá más experimentos ni cambios funcionales de I006 en esta fase. No se abre una nueva iteración.
+
+### Hechos observados y límites
+
+| Cohorte             | Estado final de esta fase | Cobertura y evidencia                                                          |
+| ------------------- | ------------------------- | ------------------------------------------------------------------------------ |
+| KNOWN_REGRESSION    | INCOMPLETE                | 13 casos registrados: 12 evaluables de 60, un error técnico y 47 no intentados |
+| INDEPENDENT_HOLDOUT | NOT_EXECUTED              | No inicializado ni ejecutado; cero resultados experimentales                   |
+
+Run ID de regresión: `7994fedc-3de7-466b-880a-ae95a4650c72`, ejecución autorizada el 2026-11-19. Se observaron **12/12 clasificaciones finales correctas** y **10/10 decisiones deterministas correctas**, que proceden del backend y no del LLM. En la ruta LLM, I006-011 e I006-012 solicitaron consultas innecesarias; ambas devolvieron FOUND y la clasificación final fue correcta. Los IDs observados eran elegibles, pero eso no hace necesaria la consulta.
+
+I006-013 terminó con `invalid_response / MIXED_CONTENT_AND_TOOLS` en la fase de decisión. El adaptador rechaza tool_calls junto con un content distinto de cadena vacía; no se conservaron esos valores, por lo que no puede reconstruirse el texto, número de llamadas, nombre o argumentos de esa respuesta. No hubo ejecución de herramienta ni clasificación final para ese caso. La parada es técnica y afecta al protocolo compartido: por ello no se inició el holdout. No se repitió ni reanudó la ejecución.
+
+Métricas del prefijo evaluable: precision de consultas 0/2 = 0 %, recall 0/0 no evaluable, classification accuracy 12/12 = 100 %, abstention accuracy 12/12 = 100 %, consistencia contrafactual 0/0 no evaluable. No se alcanzaron casos con consulta necesaria ni abstención esperada. No hay pares completos evaluables ni evidencia de los adversariales o del holdout. **No se extrapolan estos porcentajes al conjunto de 60 ni a producción.** thresholdGate permanece INCOMPLETE y experimentalGate NOT_EVALUATED. Ninguna métrica parcial acredita la puerta experimental.
+
+### Trazabilidad y conservación
+
+Informe original privado: `evals/reports/i006-r7-known/7994fedc-3de7-466b-880a-ae95a4650c72-13-INCOMPLETE.json`.
+
+SHA-256: `c5d2316a7f717a11119de55dad03221b43c3d35a950f3cfa6dc777c678759f5c`.
+
+En el mismo directorio se conservan los checkpoints, sus hashes, controles, `experimental-analysis.md`, `evidence-inventory.json`, `operational-closure.json` y el registro de aprobación y parada del holdout. Son evidencias privadas excluidas de Git; no se copian al commit documental ni se sobrescriben. Los manifiestos versionables conservan su estado de cierre y la autorización utilizada, sin volver a identidades nulas para ocultar el historial.
+
+KNOWN_REGRESSION: referencia de inicialización `I006-R7-KNOWN-INIT-2026-11-19`, referencia de ejecución `I006-R7-KNOWN-EXEC-2026-11-19`, identidad `fed8a5813b03fcf92295a9e57cca6fec1a2371b1ddffc550baa49ade989e5919`. Se conservan 16 slots reservados, 15 intentos durables/enviados/respondidos, 14 respuestas validadas por protocolo y cero intentos inciertos. Un slot quedó sin segundo envío. Ledger CLOSED, pending null, sin lock; no se libera ni reutiliza capacidad.
+
+INDEPENDENT_HOLDOUT: contenido aprobado por el usuario tras revisión asistida por ChatGPT, sin modificaciones; **aprobación humana del conjunto, no etiquetado humano independiente de los 60 casos**. El manifiesto registra APPROVED_FROZEN, pero no se activaron inicialización ni ejecución. NOT_EXECUTED es la denominación documental de cierre para el estado operativo privado NOT_INITIALIZED_NOT_STARTED; no se crea ni altera un ledger para fingir una ejecución.
+
+Ambos manifiestos mantienen initialize false y execute false. Los datos, fixtures, etiquetas, prompts, configuración candidata y comportamiento congelado en bcb30b5 se conservan. Las identidades históricas aprobadas documentan las ejecuciones anteriores, no autorizan nuevas llamadas después del commit de cierre.
+
+### Trabajo futuro diferido, sin autorización de implementación o ejecución
+
+- Revisar la compatibilidad del protocolo nativo de Ollama con la restricción del adaptador sobre content combinado con tool_calls. El rechazo tipado está demostrado; la forma concreta de la respuesta y una posible incompatibilidad general siguen sin determinarse.
+- Investigar alternativas que mejoren la decisión semántica de necesidad de consulta. Los dos falsos positivos son hechos; atribuirlos al prompt o a una capacidad general del modelo es una hipótesis no contrastada.
+- Considerar otros modelos o mecanismos de decisión únicamente con justificación funcional y autorización posterior. No se selecciona ni configura ninguno en este cierre.
+- Mejorar la observabilidad de errores de protocolo con mecanismos seguros que no expongan datos sensibles. Se constata la limitación de los diagnósticos saneados; no se habilita captura de respuestas crudas ni se modifica el adaptador.
+
+Ninguna de estas líneas cambia requisitos o contratos aprobados, rebaja umbrales o autoriza nuevas inferencias. La evidencia disponible no permite recomendar aceptación funcional ni despliegue.
+
+### Verificación del cierre documental
+
+`npm run verify` del cierre: **325/326 tests satisfactorios**, con formato, lint y compilación estricta correctos. El único fallo está en `test/tool-calling-evaluation/cohorts.test.ts`, prueba «both frozen cohorts have unique namespaces, strict quotas, hashes, and independently derived budgets»: exige identityHash null en el manifiesto operativo real, una expectativa del estado previo a inicialización. El cierre conserva legítimamente la identidad y referencia utilizadas; no se restauran a null ni se modifica el test dentro de este alcance exclusivamente documental. No se presenta la suite completa como satisfactoria. La verificación técnica anterior a la ejecución pasó 326/326; son estados y comprobaciones distintos.
+
+Se verifican sin red todos los permisos desactivados, ledger CLOSED, ausencia de lock, identidad de los datasets y del sistema congelado, integridad del inventario privado y ausencia de modificaciones en código y tests. Esta limitación de la prueba ligada al estado mutable se deja registrada, sin introducir una corrección funcional ni atribuirle validación experimental.

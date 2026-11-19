@@ -1,6 +1,6 @@
 # I006 R7 — revisión del holdout sintético
 
-Estado: **congelado por hash, pendiente de revisión humana de los 60 casos y sus etiquetas**. No hay predicciones, inferencias ni resultados reales de este conjunto. No se afirma aprobación humana de su contenido.
+Estado de cierre: **congelado por hash y aprobado por el usuario como conjunto, tras revisión asistida por ChatGPT**. No equivale a etiquetado humano independiente de los 60 casos. La cohorte permanece **NOT_EXECUTED**, sin predicciones, inferencias ni resultados reales. Esta actualización de estado no cambia casos, fixtures, etiquetas ni hash del dataset.
 
 ## Procedencia y reglas de etiquetado
 
@@ -25,7 +25,7 @@ Independencia **procedimental y limitada**: holdout nuevo después de congelar c
 
 ## Congelación
 
-Dataset: `incidents-tool-calling-holdout-es-v1`, esquema 1, contenido 1. Los bytes conservan reviewStatus CANDIDATE por contrato; el estado externo es FROZEN_PENDING_HUMAN_REVIEW. No hay permiso de inicialización ni ejecución. Un cambio posterior autorizado de contenido exigirá nueva versión y hash antes de evaluar; no se editarán etiquetas basándose en predicciones.
+Dataset: `incidents-tool-calling-holdout-es-v1`, esquema 1, contenido 1. Los bytes conservan reviewStatus CANDIDATE por contrato; el estado externo actual es APPROVED_FROZEN por la aprobación humana del conjunto asistida por IA; FROZEN_PENDING_HUMAN_REVIEW fue el estado de preparación anterior. No hay permiso de inicialización ni ejecución. Un cambio posterior autorizado de contenido exigirá nueva versión y hash antes de evaluar; no se editarán etiquetas basándose en predicciones.
 
 SHA-256: `58d307b94591ccc85b785d028d2c23878835081f982cb6cab3647bf0aeafc343`.
 
