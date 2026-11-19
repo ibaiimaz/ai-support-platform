@@ -4,7 +4,13 @@ import { mkdtemp, readFile, writeFile, readdir, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadPlan, execute, main } from '../../scripts/i006-explore.js';
+import {
+  loadPlan,
+  execute,
+  main,
+  identifiers,
+  decodeDecision,
+} from '../../scripts/i006-explore.js';
 
 const plan = loadPlan();
 const tags = { models: [{ name: plan.model, digest: plan.digest }] };
@@ -203,6 +209,191 @@ test('batch limits and synthetic declaration are mandatory; tools, schema and mo
     assert.deepEqual(custom.options, batch.variants[0].options);
     assert.equal(custom.messages[1].content, batch.cases[0].description);
     assert.equal(custom.model, 'llama3.1:8b');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('matrix identifier eligibility and strict structured decisions do not confuse backend rejection with NO_LOOKUP', () => {
+  assert.deepEqual(identifiers('inc-12, INC-12 y INC-123456; INC-012 INC-1234567 xINC-9 INC-1x'), [
+    'INC-12',
+    'INC-123456',
+  ]);
+  const schema = {
+    oneOf: [
+      {
+        type: 'object',
+        required: ['action'],
+        additionalProperties: false,
+        properties: { action: { const: 'NO_LOOKUP' } },
+      },
+      {
+        type: 'object',
+        required: ['action', 'incidentId'],
+        additionalProperties: false,
+        properties: {
+          action: { const: 'LOOKUP' },
+          incidentId: { type: 'string', pattern: '^INC-[1-9][0-9]{0,5}$', enum: ['INC-1'] },
+        },
+      },
+    ],
+  };
+  const record = (content) => ({
+    state: 'RECEIVED',
+    mechanism: 'structured',
+    hybrid: true,
+    candidates: ['INC-1'],
+    request: { format: schema },
+    responseBody: JSON.stringify({
+      done: true,
+      done_reason: 'stop',
+      message: { role: 'assistant', content: JSON.stringify(content) },
+    }),
+  });
+  assert.equal(decodeDecision(record({ action: 'NO_LOOKUP' })).valid, true);
+  assert.equal(decodeDecision(record({ action: 'LOOKUP', incidentId: 'INC-1' })).valid, true);
+  const blocked = decodeDecision(record({ action: 'LOOKUP', incidentId: 'INC-2' }));
+  assert.equal(blocked.action, 'LOOKUP');
+  assert.equal(blocked.incidentId, 'INC-2');
+  assert.equal(blocked.valid, false);
+  assert.equal(blocked.blocked, true);
+  assert.equal(decodeDecision(record({ action: 'NO_LOOKUP', extra: true })).blocked, true);
+});
+
+test('hybrid batches bypass exactly the two cases without IDs and restrict the other four schemas', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'i006-hybrid-'));
+  try {
+    const batch = JSON.parse(
+      await readFile('evals/experiments/i006-exploration-batch.json', 'utf8'),
+    );
+    batch.hybrid = true;
+    batch.mechanism = 'structured';
+    batch.maxCalls = 4;
+    batch.variants = [
+      {
+        name: 'hybrid',
+        system: 'Decide la consulta.',
+        format: {
+          oneOf: [
+            {
+              type: 'object',
+              properties: { action: { const: 'NO_LOOKUP' } },
+              required: ['action'],
+              additionalProperties: false,
+            },
+            {
+              type: 'object',
+              properties: {
+                action: { const: 'LOOKUP' },
+                incidentId: { type: 'string', pattern: '^INC-[1-9][0-9]{0,5}$' },
+              },
+              required: ['action', 'incidentId'],
+              additionalProperties: false,
+            },
+          ],
+        },
+        options: { temperature: 0 },
+      },
+    ];
+    const path = join(root, 'batch.json');
+    await writeFile(path, JSON.stringify(batch));
+    const hybrid = loadPlan(path);
+    assert.equal(hybrid.calls.filter((call) => call.codeDecision).length, 2);
+    for (const call of hybrid.calls.slice(2)) {
+      assert.deepEqual(call.body.format.oneOf[1].properties.incidentId.enum, call.candidates);
+    }
+    let calls = 0;
+    const summary = await execute(
+      hybrid,
+      async (url) => {
+        if (url.endsWith('/api/tags')) {
+          return Response.json(tags);
+        }
+        if (url.endsWith('/api/version')) {
+          return Response.json({ version: 'test' });
+        }
+        calls++;
+        return Response.json({
+          done: true,
+          done_reason: 'stop',
+          message: { role: 'assistant', content: '{"action":"NO_LOOKUP"}' },
+        });
+      },
+      root,
+    );
+    assert.equal(calls, 4);
+    assert.equal(summary.attempted, 4);
+    assert.equal(summary.results.length, 6);
+    assert.equal(summary.results.filter((row) => row.state === 'CODE_NO_LOOKUP').length, 2);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('block budget counts STARTED attempts, rejects duplicate batches, and cannot exceed fifty sends', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'i006-block-'));
+  try {
+    const block = 'model-selection-2026-11-19';
+    const request = async (url) => {
+      if (url.endsWith('/api/tags')) {
+        return Response.json(tags);
+      }
+      if (url.endsWith('/api/version')) {
+        return Response.json({ version: 'test' });
+      }
+      if (url.endsWith('/api/show')) {
+        return Response.json({ capabilities: ['completion'] });
+      }
+      if (url.endsWith('/api/ps')) {
+        return Response.json({ models: [] });
+      }
+      return Response.json({
+        done: true,
+        done_reason: 'stop',
+        message: { role: 'assistant', content: 'no lookup' },
+      });
+    };
+    const single = { ...plan, block, calls: [plan.calls[0]], maxCalls: 1 };
+    await execute(single, request, root);
+    await assert.rejects(execute(single, request, root), /duplicate/);
+    const directory = join(root, block, 'prior');
+    await (await import('node:fs/promises')).mkdir(directory);
+    for (let i = 0; i < 49; i++) {
+      await writeFile(
+        join(directory, `${String(i).padStart(2, '0')}-used.json`),
+        JSON.stringify({
+          caseId: `past-${i}`,
+          variant: 'past',
+          state: 'RECEIVED',
+          request: { model: plan.model },
+        }),
+      );
+    }
+    let dispatched = 0;
+    await assert.rejects(
+      execute(
+        { ...single, calls: [plan.calls[1]] },
+        async (...args) => {
+          if (args[0].endsWith('/api/chat')) {
+            dispatched++;
+          }
+          return request(...args);
+        },
+        root,
+      ),
+      /budget/,
+    );
+    assert.equal(dispatched, 0);
+    await writeFile(
+      join(directory, '99-uncertain.json'),
+      JSON.stringify({
+        caseId: 'uncertain',
+        variant: 'past',
+        state: 'STARTED',
+        request: { model: plan.model },
+      }),
+    );
+    await assert.rejects(execute(single, request, root), /Uncertain/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
