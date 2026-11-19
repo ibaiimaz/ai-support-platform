@@ -51,6 +51,7 @@ export interface ClassificationLlm {
     options: {
       timeoutMs: number;
       toolsEnabled: boolean;
+      eligibleIncidentIds?: readonly string[];
     },
   ): Promise<LlmResponse>;
 }

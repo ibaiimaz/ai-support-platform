@@ -43,12 +43,13 @@ async function scripted(responses: (LlmResponse | Error)[], index = 20) {
   return { result: results[0]!, calls };
 }
 
-test('AC-19/20: valid wrong ID is executed but tool decision is incorrect', async () => {
+test('AC-19/20: valid unprovided ID is blocked and tool decision is incorrect', async () => {
   const { result } = await scripted([call('INC-999'), { type: 'classification', category: 'BUG' }]);
   assert.equal(result.observation.toolRequested, true);
-  assert.equal(result.observation.toolRequestValid, true);
-  assert.equal(result.observation.toolExecuted, true);
-  assert.equal(result.observation.toolOutcome, 'NOT_FOUND');
+  assert.equal(result.observation.toolRequestValid, false);
+  assert.equal(result.observation.toolExecuted, false);
+  assert.equal(result.observation.toolOutcome, null);
+  assert.ok(result.observation.violations.includes('INELIGIBLE_INCIDENT_ID'));
   assert.equal(result.observation.toolDecisionCorrect, false);
 });
 
@@ -128,7 +129,7 @@ test('AC-21: any technical failure stops subsequent cases and records sanitized 
     assert.equal(calls, 1);
     assert.equal(results.length, 1);
     assert.deepEqual(saved, results);
-    assert.equal(results[0]!.observation.toolRequested, null);
+    assert.equal(results[0]!.observation.toolRequested, false);
     assert.equal(results[0]!.observation.toolDecisionCorrect, null);
     assert.equal(JSON.stringify(results).includes('private-text'), false);
   }
@@ -197,7 +198,7 @@ test('AC-19/22/26: real orchestration runs 60 simulated cases sequentially witho
     },
   );
   assert.equal(results.length, 60);
-  assert.equal(calls, 120);
+  assert.equal(calls, 104);
   assert.deepEqual(
     seen,
     dataset.examples.map((example) => example.id),

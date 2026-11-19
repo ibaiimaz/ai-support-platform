@@ -1,5 +1,17 @@
 # Producto
 
+## Estado vigente: I006 revisión 7 — 2026-11-19
+
+La revisión independiente final ha concluido **APPROVED**, incluido el hallazgo MEDIUM del alcance de cohorte. La implementación queda aprobada técnicamente para preparar la validación; sustituye las declaraciones anteriores de revisión técnica pendiente. I006 permanece **Implemented**, sin aceptación definitiva ni puerta experimental superada.
+
+Diseño aprobado e implementación autorizada de la [arquitectura híbrida](iterations/006-tool-calling.md#19-revisión-7--diseño-aprobado-implementación-autorizada). Las descripciones de revisiones anteriores que siguen se conservan como antecedentes, no como protocolo actual.
+
+La descripción original determina las referencias elegibles: sin IDs válidos, NO_LOOKUP desde backend y una inferencia final estructurada; con IDs, decisión nativa con enum y validación de pertenencia posterior, consulta opcional y clasificación final (dos inferencias). Máximo una herramienta, sin reintentos, 45/5/90 s; HTTP y rutas I002–I005 intactos. El texto libre de decisión no se utiliza.
+
+Qwen3 8B Q4_K_M es candidato, digest `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`, temperatura 0, think false. La composición de evaluación lo prepara explícitamente; `loadConfig` conserva Llama por defecto, sin despliegue ni promoción. La adición de definiciones al prompt es hipótesis no evaluada.
+
+Protocolo `I006-HYBRID-CLASSIFICATION-V1`, manifiesto `evals/experiments/i006-hybrid-manifest.json`, evidencias previstas en `evals/reports/i006-hybrid/`: permisos false, identidad null, sin inicialización. Regresión conocida de 60 casos (16 sin IDs, 44 con IDs), máximo 104 intentos. No es validación independiente. Métricas CODE/LLM segmentadas informativas sin nuevos umbrales. Se conservan íntegros los manifiestos y las evidencias anteriores; los diagnósticos retirados siguen bloqueados. Revisión 7 pendiente de revisión independiente y validación experimental; I006 no está Verified ni aceptada.
+
 ## Visión
 
 AI Support Platform es un proyecto educativo para construir un backend que integra LLM de forma incremental, con contratos explícitos, pruebas automatizadas y decisiones documentadas.
@@ -30,5 +42,4 @@ La [iteración 001](iterations/001-classification.md) define las reglas operativ
 Cada incremento requiere su propia especificación. No se presupone ninguna infraestructura futura. La [arquitectura](architecture.md) y los [ADRs](adr/ADR-001-sync-classification.md) recogen las decisiones técnicas iniciales.
 
 La [revisión 6 de I006](iterations/006-tool-calling.md), aprobada e implementada con pruebas deterministas el 2026-11-18, separa decisión de consulta y clasificación final. No cambia las categorías ni
-obliga a consultar por mencionar un ID. Completar una incidencia requiere dos inferencias y
-como máximo una herramienta. La implementación no acredita calidad semántica ni autoriza inferencias; su implementación fue aceptada por el responsable el 2026-11-18 tras revisión independiente. La puerta experimental permanece pendiente.
+obliga a consultar por mencionar un ID. En aquella revisión completar una incidencia requería dos inferencias y como máximo una herramienta; revisión 7 reduce a una inferencia la ruta sin referencias elegibles. La implementación no acredita calidad semántica ni autoriza inferencias; su implementación fue aceptada por el responsable el 2026-11-18 tras revisión independiente. La puerta experimental permanece pendiente.

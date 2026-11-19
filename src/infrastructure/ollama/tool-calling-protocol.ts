@@ -47,6 +47,31 @@ export const incidentLookupTool = {
   },
 };
 
+/** Do not mutate the historical tool declaration or silently allow unrestricted requests. */
+export function restrictedIncidentLookupTool(eligibleIncidentIds: readonly string[]) {
+  if (
+    eligibleIncidentIds.length === 0 ||
+    eligibleIncidentIds.some((id) => /^INC-[1-9][0-9]{0,5}$/.exec(id)?.[0] !== id)
+  ) {
+    throw new RangeError('Eligible incident references required');
+  }
+  return {
+    ...incidentLookupTool,
+    function: {
+      ...incidentLookupTool.function,
+      parameters: {
+        ...incidentLookupTool.function.parameters,
+        properties: {
+          incidentId: {
+            ...incidentLookupTool.function.parameters.properties.incidentId,
+            enum: [...new Set(eligibleIncidentIds)],
+          },
+        },
+      },
+    },
+  };
+}
+
 const validateFinal = new Ajv({
   coerceTypes: false,
   removeAdditional: false,

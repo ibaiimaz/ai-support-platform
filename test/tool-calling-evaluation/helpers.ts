@@ -1,3 +1,4 @@
+import { plannedPhases } from '../../src/evaluation/tool-calling/protocol.js';
 import { readFile } from 'node:fs/promises';
 import { parseDataset } from '../../src/evaluation/tool-calling/dataset.js';
 import type {
@@ -16,7 +17,7 @@ export const identity: RunIdentity = {
   modelDigest: 'b'.repeat(64),
   ollamaVersion: 'test',
   modelMetadataHash: 'c'.repeat(64),
-  protocolId: 'I006-DECISION-CLASSIFICATION-V1',
+  protocolId: 'I006-HYBRID-CLASSIFICATION-V1',
   codeIdentity: {
     commit: null,
     method: 'typescript_emit_exact',
@@ -31,6 +32,7 @@ export const identity: RunIdentity = {
   sourceStateHash: 'f'.repeat(64),
   baseUrl: 'http://invalid.test',
   temperature: 0,
+  think: false,
   llmTimeoutMs: 45000,
   toolTimeoutMs: 5000,
   globalTimeoutMs: 90000,
@@ -42,11 +44,11 @@ export function perfectResults(dataset: EvaluationDataset): CaseResult[] {
     outcome: 'COMPLETED',
     phases: {
       decision: {
-        started: true,
-        attempts: 1,
-        dispatched: 1,
+        started: plannedPhases(example.description).length === 2,
+        attempts: plannedPhases(example.description).length === 2 ? 1 : 0,
+        dispatched: plannedPhases(example.description).length === 2 ? 1 : 0,
         reservationUncertain: false,
-        status: 'COMPLETED',
+        status: plannedPhases(example.description).length === 2 ? 'COMPLETED' : 'NOT_STARTED',
       },
       classification: {
         started: true,
@@ -58,6 +60,7 @@ export function perfectResults(dataset: EvaluationDataset): CaseResult[] {
     },
     failurePhase: null,
     observation: {
+      decisionSource: plannedPhases(example.description).length === 2 ? 'LLM' : 'CODE',
       toolRequested: example.toolExpected,
       toolRequestValid: example.toolExpected ? true : null,
       toolExecuted: example.toolExpected,
@@ -73,7 +76,7 @@ export function perfectResults(dataset: EvaluationDataset): CaseResult[] {
       toolDecisionCorrect: true,
       requestCount: example.toolExpected ? 1 : 0,
       executionCount: example.toolExpected ? 1 : 0,
-      inferenceCount: 2,
+      inferenceCount: plannedPhases(example.description).length,
       requestedIds: example.expectedTool ? [example.expectedTool.incidentId] : [],
       violations: [],
     },

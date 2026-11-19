@@ -45,6 +45,7 @@ test('I006-AC-17 tools enabled sends the exact native request without format or 
                 incidentId: {
                   type: 'string',
                   description: 'Identificador de incidencia, por ejemplo INC-142.',
+                  enum: ['INC-142'],
                 },
               },
             },
@@ -64,7 +65,7 @@ test('I006-AC-17 tools enabled sends the exact native request without format or 
         { role: 'system', content: 'instructions supplied by application' },
         { role: 'user', content: 'incident' },
       ],
-      { timeoutMs: 45_000, toolsEnabled: true },
+      { timeoutMs: 45_000, toolsEnabled: true, eligibleIncidentIds: ['INC-142'] },
     ),
     { type: 'no_lookup' },
   );
@@ -202,12 +203,19 @@ test('I006-AC-17 HTTP failures, including redirects, remain generic and never re
         { status },
       );
     });
-    await assert.rejects(adapter.infer([], { timeoutMs: 45_000, toolsEnabled: true }), (error) => {
-      assert.ok(error instanceof ClassificationError);
-      assert.equal(error.kind, 'http_error');
-      assert.equal(error.message, 'Classification provider failed');
-      return true;
-    });
+    await assert.rejects(
+      adapter.infer([], {
+        timeoutMs: 45_000,
+        toolsEnabled: true,
+        eligibleIncidentIds: ['INC-142'],
+      }),
+      (error) => {
+        assert.ok(error instanceof ClassificationError);
+        assert.equal(error.kind, 'http_error');
+        assert.equal(error.message, 'Classification provider failed');
+        return true;
+      },
+    );
     assert.equal(requests, 1);
     assert.equal(cancelled, true);
   }
@@ -227,7 +235,11 @@ test('I006-AC-17 connection errors are recognized while programming failures pro
       throw error;
     });
     await assert.rejects(
-      adapter.infer([], { timeoutMs: 45_000, toolsEnabled: true }),
+      adapter.infer([], {
+        timeoutMs: 45_000,
+        toolsEnabled: true,
+        eligibleIncidentIds: ['INC-142'],
+      }),
       failure('connection_error'),
     );
   }
@@ -242,7 +254,11 @@ test('I006-AC-17 connection errors are recognized while programming failures pro
       throw error;
     });
     await assert.rejects(
-      adapter.infer([], { timeoutMs: 45_000, toolsEnabled: true }),
+      adapter.infer([], {
+        timeoutMs: 45_000,
+        toolsEnabled: true,
+        eligibleIncidentIds: ['INC-142'],
+      }),
       (caught) => caught === error,
     );
   }
@@ -263,7 +279,11 @@ test('I006-AC-17 limits response bytes, rejects absent bodies and preserves read
   for (const result of [new Response(null), new Response('{'), oversized]) {
     const adapter = new OllamaClassificationLlm(config, async () => result);
     await assert.rejects(
-      adapter.infer([], { timeoutMs: 45_000, toolsEnabled: true }),
+      adapter.infer([], {
+        timeoutMs: 45_000,
+        toolsEnabled: true,
+        eligibleIncidentIds: ['INC-142'],
+      }),
       failure('invalid_response'),
     );
   }
@@ -284,7 +304,11 @@ test('I006-AC-17 limits response bytes, rejects absent bodies and preserves read
         ),
     );
     await assert.rejects(
-      adapter.infer([], { timeoutMs: 45_000, toolsEnabled: true }),
+      adapter.infer([], {
+        timeoutMs: 45_000,
+        toolsEnabled: true,
+        eligibleIncidentIds: ['INC-142'],
+      }),
       error === connection ? failure('connection_error') : (caught) => caught === unexpected,
     );
   }
@@ -314,9 +338,16 @@ test('I006-AC-17 accepts a complete response at the byte limit and split Unicode
       ),
   );
 
-  assert.deepEqual(await adapter.infer([], { timeoutMs: 45_000, toolsEnabled: true }), {
-    type: 'no_lookup',
-  });
+  assert.deepEqual(
+    await adapter.infer([], {
+      timeoutMs: 45_000,
+      toolsEnabled: true,
+      eligibleIncidentIds: ['INC-142'],
+    }),
+    {
+      type: 'no_lookup',
+    },
+  );
 });
 
 test('I006-AC-17 request timeout is bounded at 45 seconds even if fetch ignores cancellation', async (t) => {
@@ -334,7 +365,7 @@ test('I006-AC-17 request timeout is bounded at 45 seconds even if fetch ignores 
     return new Promise<Response>(() => {});
   });
   const pending = assert.rejects(
-    adapter.infer([], { timeoutMs: 90_000, toolsEnabled: true }),
+    adapter.infer([], { timeoutMs: 90_000, toolsEnabled: true, eligibleIncidentIds: ['INC-142'] }),
     failure('timeout'),
   );
   await ready;
@@ -390,7 +421,10 @@ test('I006-AC-17 invalid timeouts fail before any request', async () => {
     return response();
   });
   for (const timeoutMs of [0, -1, NaN, Infinity]) {
-    await assert.rejects(adapter.infer([], { timeoutMs, toolsEnabled: true }), RangeError);
+    await assert.rejects(
+      adapter.infer([], { timeoutMs, toolsEnabled: true, eligibleIncidentIds: ['INC-142'] }),
+      RangeError,
+    );
   }
   assert.equal(requests, 0);
 });
@@ -415,7 +449,7 @@ test('I006-AC-17 the body shares the request deadline rather than starting a new
     });
   });
   const pending = assert.rejects(
-    adapter.infer([], { timeoutMs: 100, toolsEnabled: true }),
+    adapter.infer([], { timeoutMs: 100, toolsEnabled: true, eligibleIncidentIds: ['INC-142'] }),
     failure('timeout'),
   );
   await requestStarted;
@@ -481,7 +515,11 @@ test('I006-AC-10/17 a response arriving after request timeout has its body cance
       deliver = resolve;
     });
   });
-  const pending = adapter.infer([], { timeoutMs: 100, toolsEnabled: true });
+  const pending = adapter.infer([], {
+    timeoutMs: 100,
+    toolsEnabled: true,
+    eligibleIncidentIds: ['INC-142'],
+  });
   let timeoutError: unknown;
   const rejected = assert.rejects(pending, (error) => {
     assert.ok(error instanceof ClassificationError);

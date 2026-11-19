@@ -4,15 +4,21 @@
 
 **Estado:** Implemented
 
-**Versión:** Revisión 6 — decisión de consulta y clasificación separadas
+**Aprobación técnica R7:** revisión independiente final APPROVED; hallazgo MEDIUM resuelto. Autorizada la preparación de validación, no la ejecución ni la aceptación definitiva. Las referencias de revisión independiente pendiente más abajo recogen el estado anterior a esta aprobación.
+
+**Versión:** Revisión 7 — consulta híbrida y clasificación estructurada
+
+**Aprobación de diseño de revisión 7:** 2026-11-19; implementación autorizada, pendiente de revisión independiente y validación experimental.
+
+La revisión 6 y su aceptación de implementación se conservan como antecedentes. Las reglas de revisión 7 que siguen sustituyen expresamente sus obligaciones de dos inferencias en todos los casos. No se declara aceptada ni Verified I006.
 
 **Fecha de aprobación de revisión 6:** 2026-11-18
 
 **Aprobación histórica de revisión 5:** 2026-11-13
 
-**Decisiones:** DEC-I006-001 a DEC-I006-029
+**Decisiones:** DEC-I006-001 a DEC-I006-029, con actualización DEC-R7-01 a DEC-R7-07
 
-**Criterios de aceptación:** I006-AC-01 a I006-AC-26
+**Criterios de aceptación:** I006-AC-01 a I006-AC-29 (IDs 01–26 conservados)
 
 ---
 
@@ -28,7 +34,7 @@ Categorías disponibles:
 - `FEATURE`
 - `QUESTION`
 
-El LLM decide si necesita una herramienta. El backend valida, autoriza y ejecuta la solicitud.
+El backend determina referencias elegibles exclusivamente en la descripción original. Si no hay ninguna, decide NO_LOOKUP sin inferencia. Si las hay, el LLM decide la necesidad semántica; el backend valida, autoriza y ejecuta como máximo una solicitud.
 
 **Principio fundamental:** mencionar una incidencia anterior no obliga a consultarla.
 
@@ -46,37 +52,37 @@ El LLM decide si necesita una herramienta. El backend valida, autoriza y ejecuta
 
 Las decisiones originales se aprobaron con la revisión 5 el 2026-11-13. El 2026-11-18 se aprueba la separación de fases (DEC-I006-029), que actualiza expresamente DEC-I006-005 y DEC-I006-012 y el flujo de aplicación; no altera los resultados históricos ni las demás restricciones.
 
-| ID           | Decisión                                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| DEC-I006-001 | El LLM decide si necesita una herramienta; el backend valida y ejecuta.                                                        |
-| DEC-I006-002 | `NOT_FOUND` se entrega al LLM y permite continuar.                                                                             |
-| DEC-I006-003 | `UNAVAILABLE` representa indisponibilidad técnica de la consulta, sin reintentos.                                              |
-| DEC-I006-004 | Se permite abstención interna sin alterar la respuesta pública exitosa.                                                        |
-| DEC-I006-005 | Máximo dos llamadas al LLM y una herramienta; dos inferencias obligatorias en todo recorrido completado.                       |
-| DEC-I006-006 | Repositorio sintético; `FOUND` contiene `id`, `title`, `description`, `category`.                                              |
-| DEC-I006-007 | Normalización limitada al prefijo del identificador y validación estricta.                                                     |
-| DEC-I006-008 | Truncamiento determinista y contenido recuperado no confiable.                                                                 |
-| DEC-I006-009 | 45 segundos por llamada al LLM y 90 segundos globales.                                                                         |
-| DEC-I006-010 | Resultados internos `CLASSIFIED` o `INSUFFICIENT_CONTEXT`.                                                                     |
-| DEC-I006-011 | Tests deterministas y evals reales con umbrales independientes.                                                                |
-| DEC-I006-012 | Clasificar sin forzar consulta cuando baste el contexto; el resultado final procede siempre de la segunda inferencia.          |
-| DEC-I006-013 | Evolucionar el único caso de uso de producción.                                                                                |
-| DEC-I006-014 | Preservar la política de errores públicos genéricos de I001.                                                                   |
-| DEC-I006-015 | Timeout máximo de herramienta de 5 segundos.                                                                                   |
-| DEC-I006-016 | Abstención normal: 422; abstención tras `UNAVAILABLE`: 503.                                                                    |
-| DEC-I006-017 | Rechazo inmediato de solicitudes inválidas, múltiples, desconocidas o adicionales.                                             |
-| DEC-I006-018 | Deadline global agotado: `502 PROVIDER_ERROR`.                                                                                 |
-| DEC-I006-019 | Dataset de 60 casos y umbrales de evaluación definidos.                                                                        |
-| DEC-I006-020 | Una referencia explícita no implica necesidad de consulta.                                                                     |
-| DEC-I006-021 | Dos puertas de aceptación independientes y obligatorias.                                                                       |
-| DEC-I006-022 | Medir solicitudes, validez y ejecuciones por separado.                                                                         |
-| DEC-I006-023 | Separar fallos técnicos de resultados semánticos.                                                                              |
-| DEC-I006-024 | Deadline global sin reservas temporales.                                                                                       |
-| DEC-I006-025 | Separar controles deterministas y resistencia semántica a prompt injection.                                                    |
-| DEC-I006-026 | Preservar runners históricos y evolucionar producción.                                                                         |
-| DEC-I006-027 | Orquestación de herramientas en aplicación.                                                                                    |
-| DEC-I006-028 | Una decisión evaluable de tool calling por caso.                                                                               |
-| DEC-I006-029 | Primera inferencia para decidir consulta nativa sin format; segunda obligatoria para clasificar con esquema, sin herramientas. |
+| ID           | Decisión                                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| DEC-I006-001 | Con referencias elegibles, el LLM decide la necesidad; el backend valida y ejecuta (revisión 7).                    |
+| DEC-I006-002 | `NOT_FOUND` se entrega al LLM y permite continuar.                                                                  |
+| DEC-I006-003 | `UNAVAILABLE` representa indisponibilidad técnica de la consulta, sin reintentos.                                   |
+| DEC-I006-004 | Se permite abstención interna sin alterar la respuesta pública exitosa.                                             |
+| DEC-I006-005 | Máximo dos llamadas y una herramienta: una inferencia final sin IDs, dos con IDs (revisión 7).                      |
+| DEC-I006-006 | Repositorio sintético; `FOUND` contiene `id`, `title`, `description`, `category`.                                   |
+| DEC-I006-007 | Normalización limitada al prefijo del identificador y validación estricta.                                          |
+| DEC-I006-008 | Truncamiento determinista y contenido recuperado no confiable.                                                      |
+| DEC-I006-009 | 45 segundos por llamada al LLM y 90 segundos globales.                                                              |
+| DEC-I006-010 | Resultados internos `CLASSIFIED` o `INSUFFICIENT_CONTEXT`.                                                          |
+| DEC-I006-011 | Tests deterministas y evals reales con umbrales independientes.                                                     |
+| DEC-I006-012 | Clasificar sin forzar consulta; resultado exclusivamente de fase final, primera o segunda inferencia según ruta.    |
+| DEC-I006-013 | Evolucionar el único caso de uso de producción.                                                                     |
+| DEC-I006-014 | Preservar la política de errores públicos genéricos de I001.                                                        |
+| DEC-I006-015 | Timeout máximo de herramienta de 5 segundos.                                                                        |
+| DEC-I006-016 | Abstención normal: 422; abstención tras `UNAVAILABLE`: 503.                                                         |
+| DEC-I006-017 | Rechazo inmediato de solicitudes inválidas, múltiples, desconocidas o adicionales.                                  |
+| DEC-I006-018 | Deadline global agotado: `502 PROVIDER_ERROR`.                                                                      |
+| DEC-I006-019 | Dataset de 60 casos y umbrales de evaluación definidos.                                                             |
+| DEC-I006-020 | Una referencia explícita no implica necesidad de consulta.                                                          |
+| DEC-I006-021 | Dos puertas de aceptación independientes y obligatorias.                                                            |
+| DEC-I006-022 | Medir solicitudes, validez y ejecuciones por separado.                                                              |
+| DEC-I006-023 | Separar fallos técnicos de resultados semánticos.                                                                   |
+| DEC-I006-024 | Deadline global sin reservas temporales.                                                                            |
+| DEC-I006-025 | Separar controles deterministas y resistencia semántica a prompt injection.                                         |
+| DEC-I006-026 | Preservar runners históricos y evolucionar producción.                                                              |
+| DEC-I006-027 | Orquestación de herramientas en aplicación.                                                                         |
+| DEC-I006-028 | Una decisión evaluable de tool calling por caso.                                                                    |
+| DEC-I006-029 | Revisión 6 introdujo decisión nativa y clasificación separadas; revisión 7 omite la inferencia de decisión sin IDs. |
 
 **Precisiones técnicas incorporadas:**
 
@@ -96,7 +102,7 @@ Las decisiones originales se aprobaron con la revisión 5 el 2026-11-13. El 2026
 
 Evolucionar `classifyIncident()` como único caso de uso de producción.
 
-Responsabilidades de la revisión 6:
+Responsabilidades históricas de la revisión 6 (sustituidas por la sección 19):
 
 1. Iniciar un único deadline monotónico de 90 segundos para toda la incidencia.
 2. Primera inferencia de decisión: instrucciones específicas, descripción original, herramientas nativas habilitadas y sin `format`.
@@ -150,6 +156,7 @@ interface ClassificationLlm {
     options: {
       timeoutMs: number;
       toolsEnabled: boolean;
+      eligibleIncidentIds?: readonly string[];
     },
   ): Promise<LlmResponse>;
 }
@@ -157,7 +164,7 @@ interface ClassificationLlm {
 
 `toolsEnabled: true` identifica la fase de decisión: el adaptador devuelve exclusivamente `LookupDecision`. `toolsEnabled: false` identifica la fase final: solo `FinalClassification` puede completar la operación; cualquier llamada nativa se conserva y se entrega a aplicación para rechazarla, no se filtra. Un `no_lookup` inyectado en la segunda fase es una respuesta interna inválida. La unión común permite observar solicitudes prohibidas; no autoriza mezclar los resultados de ambas fases.
 
-`no_lookup` es un resultado construido por el adaptador, no un JSON que se exija al modelo ni una abstención. El contrato público no incluye esta variante. La validación independiente en aplicación rechazará una clasificación/abstención interna en fase de decisión, en lugar de convertirla silenciosamente en `no_lookup`.
+`no_lookup` es un resultado construido por el adaptador en ruta LLM o determinísticamente por aplicación sin IDs, no un JSON que se exija al modelo ni una abstención. El contrato público no incluye esta variante. La validación independiente en aplicación rechazará una clasificación/abstención interna en fase de decisión, en lugar de convertirla silenciosamente en `no_lookup`.
 
 #### Validez de la primera respuesta nativa
 
@@ -386,7 +393,7 @@ Los tests deberán simular el reloj y los vencimientos relevantes.
 
 - Máximo dos llamadas al LLM.
 - Máximo una ejecución de herramienta.
-- Segunda inferencia obligatoria para completar toda clasificación o abstención, también después de `no_lookup`; exclusivamente para obtener un resultado final.
+- Inferencia final obligatoria: única sin IDs, segunda con IDs, también después de `no_lookup`.
 - Sin reintentos automáticos.
 - Cancelación _best effort_.
 
@@ -716,7 +723,9 @@ Cada pareja debe cumplir las expectativas de decisión de herramienta y resultad
 - Detener nuevas inferencias ante timeout de Ollama y conservar resultados parciales, conforme a I005.
 - Exigir los 60 casos evaluables para comprobar los umbrales.
 
-### Protocolo de revisión 6: dos fases por caso
+### Protocolo histórico de revisión 6: dos fases por caso
+
+Conservado como trazabilidad; para nuevas preparaciones rige exclusivamente la sección 19.
 
 - Identificador del protocolo implementado: `I006-DECISION-CLASSIFICATION-V1`. No es una autorización.
 - La cota de una pasada de 60 casos es 120 inferencias. Si los 60 alcanzan resultado final, se observan exactamente 120: una decisión y una clasificación por caso. No hay warm-up ni llamadas auxiliares de inferencia. Un rechazo de política puede dejar un caso evaluable con menos llamadas y sin resultado final; conserva sus penalizaciones y no obliga a ejecutar la segunda fase. Los fallos técnicos detienen la pasada. Ningún caso se repite.
@@ -735,7 +744,7 @@ Cada pareja debe cumplir las expectativas de decisión de herramienta y resultad
 
 ### Funcionalidad
 
-- **I006-AC-01:** Con descripción suficiente, primera decisión `no_lookup`, ninguna herramienta y clasificación con la categoría esperada en la segunda inferencia con esquema; nunca finalizar con el contenido de la primera fase.
+- **I006-AC-01:** Sin identificadores elegibles, NO_LOOKUP determinista y exactamente una inferencia final con esquema; con referencias autosuficientes, decisión semántica sin consulta y segunda inferencia final. Nunca clasificar desde el texto de decisión.
 - **I006-AC-02:** Una referencia innecesaria no obliga a consultar.
 - **I006-AC-03:** Una consulta necesaria solicita correctamente `getIncidentById`.
 - **I006-AC-04:** `FOUND` aporta contexto para la respuesta final.
@@ -746,7 +755,7 @@ Cada pareja debe cumplir las expectativas de decisión de herramienta y resultad
 
 - **I006-AC-07:** Normalización y validación estricta de identificadores.
 - **I006-AC-08:** Rechazo de solicitudes inválidas, múltiples, desconocidas o adicionales.
-- **I006-AC-09:** Máximo dos inferencias y una herramienta; todo recorrido completado usa exactamente una decisión y una clasificación. Rechazo o fallo previo impide operaciones posteriores, sin completar artificialmente las dos llamadas.
+- **I006-AC-09:** Máximo dos inferencias y una herramienta; recorrido completado sin ID usa una clasificación; con ID usa una decisión y una clasificación. Rechazo o fallo previo impide operaciones posteriores, sin completar artificialmente las dos llamadas.
 - **I006-AC-10:** Aplicación de límites 45/5/90, precedencia determinista, sin reservas temporales ni reintentos.
 - **I006-AC-11:** Truncamiento por puntos de código Unicode y serialización estructurada.
 - **I006-AC-12:** Controles deterministas que impiden operaciones no autorizadas.
@@ -754,22 +763,22 @@ Cada pareja debe cumplir las expectativas de decisión de herramienta y resultad
 
 ### Contratos y compatibilidad
 
-- **I006-AC-14:** Validación estricta según fase: solo `LookupDecision` en la primera y resultado final de clasificación/abstención en la segunda; llamadas adicionales rechazadas, sin convertir texto o resultados de otra fase.
+- **I006-AC-14:** Validación estricta según fase lógica: solo `LookupDecision` cuando existe fase LLM de decisión y resultado final de clasificación/abstención en la fase final; llamadas adicionales rechazadas, sin convertir texto o resultados de otra fase.
 - **I006-AC-15:** Mapeo HTTP y errores públicos acordados.
 - **I006-AC-16:** Compatibilidad del endpoint público.
-- **I006-AC-17:** Primera petición con tools y sin format, traducción estricta del sobre y llamadas nativas o `no_lookup` sin interpretar contenido; segunda con format y sin tools, esquema final estricto y preservación de solicitudes prohibidas para rechazo; correlación y errores seguros.
+- **I006-AC-17:** Petición de decisión solo con IDs elegibles, tools con enum dinámico y sin format, traducción estricta del sobre y llamadas nativas o `no_lookup` sin interpretar contenido; petición final con format y sin tools, esquema final estricto y preservación de solicitudes prohibidas para rechazo; correlación y errores seguros.
 - **I006-AC-18:** Compatibilidad de I002–I005 sin herramientas en su ruta histórica.
 
 ### Evaluación
 
-- **I006-AC-19:** Registro independiente de decisión, solicitudes, validez y ejecuciones; la clasificación procede solo de la segunda fase y un caso aporta una unidad.
+- **I006-AC-19:** Registro independiente de origen CODE/LLM de decisión, solicitudes, validez, pertenencia del ID y ejecuciones; la clasificación procede solo de la fase final y un caso aporta una unidad.
 - **I006-AC-20:** Penalización de solicitudes innecesarias, inválidas o con identificador incorrecto.
 - **I006-AC-21:** Separación de fallos técnicos y semánticos; bloqueo ante casos incompletos.
 - **I006-AC-22:** Dataset contenido v3 congelado conservado byte a byte; grupos directos significan sin consulta, con expectativas explícitas para `NOT_FOUND`, `UNAVAILABLE`, casos adversariales y pares contrafactuales.
 - **I006-AC-23:** Cumplimiento independiente de ambas puertas de aceptación.
 - **I006-AC-24:** Runners I002–I005 preservados con invocación directa al clasificador histórico.
 - **I006-AC-25:** El endpoint utiliza exclusivamente el flujo I006.
-- **I006-AC-26:** Runner sobre el flujo real de dos fases, informes v2 con protocolo, identidad de ambos prompts, intentos/estados por fase y resultado final separados; máximo 120 inferencias por 60 casos completos, persistencia de parciales y aislamiento del experimento CLOSED.
+- **I006-AC-26:** Runner sobre el flujo híbrido real, informes con protocolo e identidad diferenciados, origen de decisión e intentos/estados por fase; cota calculada por extracción (104 para el conjunto conocido), parciales durables y aislamiento de todos los experimentos cerrados.
 
 ## 15. Puertas de aceptación
 
@@ -788,7 +797,7 @@ Superar el 100 % de los tests obligatorios sobre:
 
 Completar los 60 casos evaluables con el modelo real y superar todos los umbrales definidos.
 
-Ambas puertas son obligatorias e independientes. Se conservan 60 casos evaluables y los umbrales como condición experimental, sin añadir un umbral de 120 intentos observados: los rechazos de política conservan su evaluabilidad y penalización aunque no se ejecute la segunda fase. Los 120 intentos son la cota y el consumo de 60 recorridos con resultado final.
+Ambas puertas son obligatorias e independientes. Se conservan 60 casos evaluables y los umbrales como condición experimental, sin añadir un umbral de 120 intentos observados: los rechazos de política conservan su evaluabilidad y penalización aunque no se ejecute la segunda fase. Para revisión 7 la cota se calcula desde las referencias elegibles: 104 para los 60 recorridos conocidos con resultado final.
 
 Un resultado experimental favorable no compensa un incumplimiento determinista.
 
@@ -807,7 +816,7 @@ Cuando se autorice:
 9. Runner I006 y dataset de 60 casos.
 10. Informe de resultados y métricas.
 
-## 17. Plan de implementación y verificación determinista
+## 17. Plan histórico de implementación y verificación determinista — revisión 6
 
 Las siete tareas fueron autorizadas e implementadas el 2026-11-18. No conceden permisos experimentales. La tabla conserva el alcance y las verificaciones aprobadas; la trazabilidad de cierre figura al final.
 
@@ -893,3 +902,73 @@ El protocolo `I006-DECISION-CLASSIFICATION-V1`, las dos instrucciones y la nueva
 El responsable acepta expresamente la implementación de revisión 6 el **2026-11-18** tras segunda revisión independiente **APPROVED**. Los hallazgos HIGH (pérdida del parcial ante fallo previo a reserva) y LOW (estado documental obsoleto) quedan resueltos. La verificación determinista de las correcciones pasó **296/296 tests**, formato, lint, compilación estricta y `git diff --check`; el commit de cierre exige volver a ejecutar estas comprobaciones.
 
 El evaluador distingue inicio lógico, intento durable confirmado, reserva incierta y envío observado. Un fallo de autorización/reserva se sanea como `control_error`; se conserva el prefijo y el caso técnico en el checkpoint cuando su almacenamiento está disponible, sin relajar la correspondencia con el ledger ni devolver capacidad. Si el ledger queda incierto se bloquea y no se repara automáticamente. Si tampoco puede persistirse el informe, siguen vigentes el bloqueo conservador y las evidencias anteriores. Esta aceptación no autoriza inferencias ni inicialización y no acredita la puerta experimental. El estado de I006 sigue **Implemented**, no Verified.
+
+## 19. Revisión 7 — diseño aprobado, implementación autorizada
+
+Fecha: **2026-11-19**. La experimentación exploratoria fue aceptada como justificación de selección candidata, no como validación del nuevo flujo. Las secciones anteriores que describen revisión 6 son históricas donde contradigan esta sección. Se mantienen todas las reglas no sustituidas y los resultados anteriores.
+
+### Decisiones aprobadas
+
+| ID        | Decisión vigente                                                                                                                                                                                    |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-R7-01 | Candidato Ollama `qwen3:8b`, Q4_K_M, digest `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`, temperatura 0 y `think: false`. No cambia el modelo desplegado ni el default Llama. |
+| DEC-R7-02 | Extraer exclusivamente de la descripción original IDs completos `^INC-[1-9][0-9]{0,5}$`, normalizar solo prefijo, eliminar duplicados y rechazar coincidencias parciales o integradas.              |
+| DEC-R7-03 | Cero IDs: decisión CODE NO_LOOKUP, sin inferencia de decisión ni herramientas, una inferencia final estructurada.                                                                                   |
+| DEC-R7-04 | Uno o más IDs: decisión LLM nativa sin format con enum dinámico, máximo una herramienta y posterior clasificación obligatoria; dos inferencias al completar.                                        |
+| DEC-R7-05 | Validar en aplicación nombre, argumentos, multiplicidad y pertenencia al conjunto original, independientemente del schema del proveedor. Un rechazo no se transforma en NO_LOOKUP.                  |
+| DEC-R7-06 | Clasificación final sin tools y con schema estricto; contexto original y resultado autorizado, sin texto de decisión. HTTP, categorías y abstención permanecen iguales.                             |
+| DEC-R7-07 | Añadir las definiciones oficiales BUG/FEATURE/QUESTION al prompt de decisión para juzgar suficiencia. Mejora semántica como hipótesis no evaluada; sin ejemplos ni IDs concretos.                   |
+
+Estas decisiones actualizan DEC-I006-001/005/012/029: el LLM decide necesidad solo cuando hay referencias elegibles; la clasificación es siempre fase final, pero no siempre segunda inferencia. DEC-I006-007 y todas las restricciones de error, privacidad, límites y herramientas se mantienen.
+
+### Extracción y contrato interno
+
+El extractor distingue tokens de IDs completos de la búsqueda textual. Se consideran límites léxicos las letras y marcas Unicode, números, guion y guion bajo: no extraer un prefijo válido dentro de una secuencia inválida, demasiado larga o alfanumérica. Se conserva orden de primera aparición; solo `inc-` admite normalización de mayúsculas. No se recorta ni repara el identificador. Citas en la descripción siguen siendo datos no confiables: elegibilidad sintáctica no implica necesidad semántica ni autorización de acceso.
+
+`ClassificationLlm.infer` recibe opcionalmente `eligibleIncidentIds` para el schema dinámico; cuando `toolsEnabled` es true la lista no puede estar vacía. Aplicación vuelve a comprobar pertenencia usando `readIncidentId`. La configuración `think` pertenece a infraestructura/composición, nunca a dominio ni aplicación.
+
+### Evaluación y controles
+
+Protocolo propio `I006-HYBRID-CLASSIFICATION-V1`, manifiesto `i006-hybrid-manifest.json` y directorio privado `evals/reports/i006-hybrid/`. Permisos inicialmente false e identidad null; no inicializados. El CLI existente no permite escoger protocolos cerrados. El manifiesto de revisión 6 queda intacto y sus controles no se reutilizan.
+
+Dataset contenido 3 y hash aprobados intactos. Los 60 casos son **regresión conocida, no holdout independiente**, por su uso durante desarrollo y selección. La preparación independiente y cualquier inferencia corresponden a un bloque posterior.
+
+La extracción implementada deberá confirmar 16 casos sin ID y 44 con ID; reserva conservadora por caso de uno o dos slots respectivamente: **16 + 44 × 2 = 104**. Ninguna reserva no enviada se libera. Se preservan lock, journals previos al envío, cierre durable, prohibición de reanudación y saneamiento de fallos de autorización/reserva/persistencia. Inicio lógico, intento reservado y envío real siguen separados. La primera reserva corresponde a classification en ruta CODE o decision en ruta LLM; no se deduce fase del ordinal de envío.
+
+El informe serializado identifica `dataset.cohort: KNOWN_REGRESSION`. `status` (INCOMPLETE/COMPLETE_FAILED/COMPLETE_PASSED) y `thresholdGate` describen exclusivamente completitud y umbrales de esa cohorte; COMPLETE_PASSED no significa validación independiente ni aceptación de I006. Para la regresión conocida, `experimentalGate` e `assessment.independentValidation` permanecen NOT_EVALUATED y `assessment.iterationAcceptance` es NOT_GRANTED, con `assessment.scope: COHORT_THRESHOLDS_ONLY`. La aceptación humana sigue fuera del informe automático. El campo de cohorte distingue KNOWN_REGRESSION de una futura INDEPENDENT; el constructor actual solo identifica el conjunto conocido, sin selector para atribuir independencia. Incorporar otra cohorte requerirá su preparación y autorización posteriores.
+
+Los segmentos serializan `interpretation: DESCRIPTIVE_ONLY` y `bindingThresholds: false`; sus métricas conservan fórmulas y referencias numéricas existentes, pero no añaden puertas vinculantes. Estos metadatos no modifican umbrales, denominadores, política de errores ni controles operativos.
+
+Registrar `decisionSource: CODE | LLM`, fases no iniciadas, solicitudes/validez/ID, ejecuciones, errores y resultado final. Ofrecer métricas globales y segmentadas por origen sin umbrales nuevos. No atribuir un bloqueo de backend como acierto semántico LLM. Mantener las cinco fórmulas y umbrales, diagnósticos de abstención, contadores y denominadores, gate determinista independiente y estados INCOMPLETE/COMPLETE_FAILED/COMPLETE_PASSED.
+
+### Criterios adicionales y verificación
+
+- **I006-AC-27:** Extracción completa y determinista, deduplicación, límites Unicode y normalización; sin identificadores desde prompts, herramientas o resultados.
+- **I006-AC-28:** Ausencia de IDs omite decisión LLM; presencia genera enum y validación posterior independiente que bloquea cualquier ID no aportado antes del repositorio.
+- **I006-AC-29:** Candidato Qwen con think false identificado sin promoción automática; trazabilidad CODE/LLM, métricas segmentadas y presupuesto de 104 con controles propios desactivados.
+
+Plan: (1) extractor y contrato mínimo; (2) orquestación híbrida y validación; (3) enum y configuración candidata en infraestructura; (4) prompt de decisión; (5) observación, informes y métricas segmentadas; (6) control por ruta e identidad independiente; (7) regresión determinista integral, HTTP e históricos, autorrevisión y consistencia documental. Actualizar tests obsoletos de dos fases obligatorias conservando su garantía en entradas con referencias. No ejecutar modelos ni modificar evidencias. Implementación pendiente de revisión independiente; puerta experimental pendiente y ninguna inferencia autorizada por este documento.
+
+### Implementación y trazabilidad de revisión 7 — pendiente de aceptación
+
+La implementación de este bloque prepara las siete tareas anteriores. Se conserva estado Implemented, sin aceptación de revisión 7 ni puerta experimental superada. No hay promoción o despliegue; Llama sigue siendo el default de la API. La autorrevisión de Codex no es una revisión independiente.
+
+| AC                   | Evidencia determinista vigente                                                                                                                              | Pendiente                                                      |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| 01–03                | `hybrid-classification`, `classify-incident-orchestration`, `classification-phases`: rutas de una/dos inferencias, decisiones simuladas y consulta opcional | Calidad semántica de necesidad y categoría con Qwen            |
+| 04–06                | Orquestación y HTTP: FOUND, NOT_FOUND, UNAVAILABLE con clasificación/abstención                                                                             | Recorrido real autorizado                                      |
+| 07–08, 12, 14, 27–28 | Extracción Unicode, enums por petición, validación posterior y rechazos antes del repositorio; protocolo estricto                                           | Ningún control determinista identificado como pendiente        |
+| 09–10                | Orquestación y deadline: límites, precedencia y parada sin recuperación; nueva ruta de una inferencia                                                       | Latencia real y cancelación best effort                        |
+| 11, 15–16, 25        | Truncamiento, correlación, privacidad y regresión del contrato HTTP                                                                                         | Ningún cambio público autorizado                               |
+| 13                   | Separación de roles, contenido recuperado no confiable y bloqueo de operaciones adicionales                                                                 | Resistencia semántica adversarial no demostrada                |
+| 17, 29               | Adaptador simulado: herramientas nativas con enum, final con schema, think false y candidato identificado sin cambio de defaults                            | Compatibilidad real del flujo y prompt nuevos                  |
+| 18, 24               | Regresión simulada I002–I005; adaptadores, prompts y contratos históricos intactos                                                                          | No repetir ejecuciones históricas                              |
+| 19–21, 26            | Observación CODE/LLM, 104 envíos simulados, journals durables y fallos de autorización/reserva/persistencia con parciales                                   | Revisión independiente e identidad/autorización futuras        |
+| 22                   | Dataset y hash congelados, 60 casos, fixtures y diez pares; extracción 16/44                                                                                | Es regresión conocida; preparar conjunto independiente después |
+| 23                   | Fórmulas y gates separados, segmentación informativa sin nuevos umbrales                                                                                    | Puerta experimental y aceptación humana                        |
+
+Los tests anteriores que asumían dos inferencias sin referencia se actualizan a la ruta de una; las pruebas de fallos entre fases usan entradas simuladas con referencias para conservar su garantía original. No se eliminan tests. La prueba de composición I003 conserva sus payloads históricos y usa una referencia explícita solo para probar las dos fases HTTP actuales. La solicitud de un ID no aportado se comprueba como bloqueo; otro test conserva el caso distinto de un ID elegible pero semánticamente incorrecto.
+
+La comprobación adicional del smoke R6 usa escenarios inyectados expresamente sintéticos con referencia para seguir probando sus barreras de cuatro envíos; no ejecuta ni reinterpreta I006-001 histórico con arquitectura nueva. El guion original permanece sin cambios, fijado a su identidad anterior y con autorización cerrada. La extracción y los schemas de revisión 7 no reutilizan autorizaciones de esa prueba. Se conserva el texto de la declaración nativa exploratoria y se añade únicamente el enum dinámico; las definiciones del prompt son la hipótesis semántica nueva.
+
+Verificación de implementación del **2026-11-19**: `npm run verify` satisfactorio con **317/317 tests** (formato, lint y TypeScript estricto incluidos); comprobación adicional de 51 tests sobre extractor, adaptador y scripts históricos, todos satisfactorios. `git diff --check` conforme. `--validate` confirma dataset v3 congelado, cohorte KNOWN_REGRESSION y cota 104. No se realizaron inferencias ni inicialización en este bloque. La revisión 7 queda implementada, sin commit y pendiente de revisión independiente y posterior validación experimental; no implica aceptación humana.

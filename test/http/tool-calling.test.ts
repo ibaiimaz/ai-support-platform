@@ -66,7 +66,7 @@ test('I006-AC-15/16/25 direct abstention is 422 with the exact public error enve
   const result = await app.inject({
     method: 'POST',
     url,
-    payload: { description: 'DESCRIPTION_SECRET' },
+    payload: { description: 'DESCRIPTION_SECRET INC-142' },
   });
   assert.equal(result.statusCode, 422);
   assertError(
@@ -163,7 +163,7 @@ test('I006-AC-04/15/25 FOUND supplies context but the final LLM category determi
   const result = await app.inject({
     method: 'POST',
     url,
-    payload: { description: 'DESCRIPTION_SECRET' },
+    payload: { description: 'DESCRIPTION_SECRET INC-142' },
   });
   assert.equal(result.statusCode, 200);
   assert.deepEqual(result.json(), { category: 'QUESTION' });
@@ -214,7 +214,7 @@ test('I006-AC-08/09/15 malformed and prohibited requests become generic 502 with
     const result = await app.inject({
       method: 'POST',
       url,
-      payload: { description: 'DESCRIPTION_SECRET' },
+      payload: { description: 'DESCRIPTION_SECRET INC-142' },
     });
     assert.equal(result.statusCode, 502);
     assertError(result.json(), 'PROVIDER_ERROR', 'No se pudo completar la clasificación.');
@@ -227,7 +227,11 @@ test('I006-AC-08/09/15 malformed and prohibited requests become generic 502 with
   ]);
   const app = buildApp(state.dependencies);
   t.after(() => app.close());
-  const result = await app.inject({ method: 'POST', url, payload: { description: 'incident' } });
+  const result = await app.inject({
+    method: 'POST',
+    url,
+    payload: { description: 'incident INC-142' },
+  });
   assert.equal(result.statusCode, 502);
   assertError(result.json(), 'PROVIDER_ERROR', 'No se pudo completar la clasificación.');
   assert.deepEqual(state.counts(), { inferences: 2, queries: 1 });
@@ -246,7 +250,7 @@ test('I006-AC-10/15 actual global exhaustion in orchestration maps to generic 50
   const result = await app.inject({
     method: 'POST',
     url,
-    payload: { description: 'DESCRIPTION_SECRET' },
+    payload: { description: 'DESCRIPTION_SECRET INC-142' },
   });
   assert.equal(result.statusCode, 502);
   assertError(result.json(), 'PROVIDER_ERROR', 'No se pudo completar la clasificación.');
@@ -304,7 +308,7 @@ test('I006-AC-15/16 errors and logs never expose prompts, tool data, arbitrary e
     const result = await app.inject({
       method: 'POST',
       url,
-      payload: { description: 'DESCRIPTION_SECRET' },
+      payload: { description: 'DESCRIPTION_SECRET INC-142' },
     });
     assert.equal(result.statusCode, error instanceof TypeError ? 500 : 502);
     assertError(
@@ -356,7 +360,11 @@ test('I006-AC-15 unexpected repository errors become safe 500 instead of semanti
   );
   const app = buildApp(state.dependencies);
   t.after(() => app.close());
-  const result = await app.inject({ method: 'POST', url, payload: { description: 'incident' } });
+  const result = await app.inject({
+    method: 'POST',
+    url,
+    payload: { description: 'incident INC-142' },
+  });
   assert.equal(result.statusCode, 500);
   assertError(result.json(), 'INTERNAL_ERROR', 'Error interno.');
   assert.deepEqual(state.counts(), { inferences: 1, queries: 1 });

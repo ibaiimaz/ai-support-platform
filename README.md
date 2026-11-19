@@ -1,5 +1,17 @@
 # AI Support Platform
 
+## Estado vigente: I006 revisión 7 — 2026-11-19
+
+La revisión independiente final ha concluido **APPROVED**, incluido el hallazgo MEDIUM del alcance de cohorte. La implementación queda aprobada técnicamente para preparar la validación; sustituye las declaraciones anteriores de revisión técnica pendiente. I006 permanece **Implemented**, sin aceptación definitiva ni puerta experimental superada.
+
+Diseño aprobado e implementación autorizada de la [arquitectura híbrida](specs/iterations/006-tool-calling.md#19-revisión-7--diseño-aprobado-implementación-autorizada). Las descripciones de revisiones anteriores que siguen se conservan como antecedentes, no como protocolo actual.
+
+La descripción original determina las referencias elegibles: sin IDs válidos, NO_LOOKUP desde backend y una inferencia final estructurada; con IDs, decisión nativa con enum y validación de pertenencia posterior, consulta opcional y clasificación final (dos inferencias). Máximo una herramienta, sin reintentos, 45/5/90 s; HTTP y rutas I002–I005 intactos. El texto libre de decisión no se utiliza.
+
+Qwen3 8B Q4_K_M es candidato, digest `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`, temperatura 0, think false. La composición de evaluación lo prepara explícitamente; `loadConfig` conserva Llama por defecto, sin despliegue ni promoción. La adición de definiciones al prompt es hipótesis no evaluada.
+
+Protocolo `I006-HYBRID-CLASSIFICATION-V1`, manifiesto `evals/experiments/i006-hybrid-manifest.json`, evidencias previstas en `evals/reports/i006-hybrid/`: permisos false, identidad null, sin inicialización. Regresión conocida de 60 casos (16 sin IDs, 44 con IDs), máximo 104 intentos. No es validación independiente. Métricas CODE/LLM segmentadas informativas sin nuevos umbrales. Se conservan íntegros los manifiestos y las evidencias anteriores; los diagnósticos retirados siguen bloqueados. Revisión 7 pendiente de revisión independiente y validación experimental; I006 no está Verified ni aceptada.
+
 Proyecto educativo backend para explorar aplicaciones que integran LLM mediante iteraciones pequeñas y especificaciones aprobadas antes de implementar.
 
 La iteración 001 implementa `POST /api/v1/incidents/classify`: recibe una descripción y devuelve `BUG`, `FEATURE` o `QUESTION`. Usa Fastify, TypeScript estricto y Ollama local, con clasificación síncrona y proveedor desacoplado. La iteración está `Verified` desde el **2026-11-04**, tras revisión y aceptación humana de la implementación, la legibilidad y el funcionamiento real con Ollama; véase el registro de la [iteración](specs/iterations/001-classification.md).
@@ -62,7 +74,7 @@ I006 utiliza constantes: **45 segundos por inferencia, 5 por herramienta y 90 gl
 sin reintentos, con un máximo de dos inferencias y una consulta. `OLLAMA_TIMEOUT_MS` sigue
 siendo configuración histórica de `OllamaClassifier`; `loadConfig()` la valida al arrancar,
 pero no modifica los límites I006. No se añaden variables de entorno para esos límites.
-La [especificación I006 revisión 6](specs/iterations/006-tool-calling.md) define el flujo implementado: una decisión con herramientas sin format y una clasificación obligatoria sin herramientas con esquema. Todo resultado final requiere dos inferencias, con o sin consulta, sin cambiar HTTP. El texto de decisión se descarta; una solicitud inválida o fallo previo detiene el recorrido.
+La [especificación I006 revisión 7](specs/iterations/006-tool-calling.md#19-revisión-7--diseño-aprobado-implementación-autorizada) define el flujo híbrido preparado: sin IDs elegibles, una clasificación estructurada; con IDs, decisión nativa restringida y clasificación estructurada. El texto de decisión se descarta; un rechazo o fallo previo detiene el recorrido. No se ha desplegado ni validado experimentalmente esta revisión.
 
 `main.ts` usa `createClassificationDependencies()` para construir `OllamaClassificationLlm`,
 `SyntheticIncidentRepository` y las instrucciones independientes de I006. El repositorio

@@ -17,8 +17,11 @@ const state = {
   identityHash: sha256(JSON.stringify(syntheticIdentity)),
   scenarios: [
     {
-      id: 'I006-001',
-      description: JSON.parse(readFileSync(datasetPath)).examples[0].description,
+      // The historical executable stays identity-pinned. Inject an explicitly synthetic
+      // referenced scenario to retain its two-phase transport-control tests under R7.
+      // This does not replay or reinterpret the original I006-001 smoke evidence.
+      id: 'SIMULATED-R6-NO-LOOKUP',
+      description: 'Incidencia sintética autosuficiente, referencia INC-142.',
       lookup: false,
     },
     { id: 'I006-R6-INC-142', description: smokeCase.description, lookup: true },
@@ -118,7 +121,7 @@ test('R6 smoke local check is network-free and cannot initialize evidence', asyn
   );
 });
 
-test('R6 smoke real composition follows both fixed scenarios in four durable sends with native unchanged payloads', async () => {
+test('R6 smoke transport controls retain four durable sends using injected synthetic referenced scenarios', async () => {
   const f = await fixture();
   try {
     const report = await run(f.options);

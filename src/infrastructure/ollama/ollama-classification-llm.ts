@@ -6,7 +6,7 @@ import type {
 } from '../../application/classification-llm.js';
 import { classificationTimeouts } from '../../application/classification-timeouts.js';
 import {
-  incidentLookupTool,
+  restrictedIncidentLookupTool,
   parseToolCallingResponse,
   toolCallingFinalSchema,
   toOllamaMessages,
@@ -15,7 +15,7 @@ import { postToolCallingChat } from './tool-calling-transport.js';
 
 export class OllamaClassificationLlm implements ClassificationLlm {
   constructor(
-    private readonly config: Pick<Config, 'baseUrl' | 'model'>,
+    private readonly config: Pick<Config, 'baseUrl' | 'model'> & { think?: boolean },
     private readonly request: typeof fetch = fetch,
   ) {}
 
@@ -24,6 +24,7 @@ export class OllamaClassificationLlm implements ClassificationLlm {
     options: {
       timeoutMs: number;
       toolsEnabled: boolean;
+      eligibleIncidentIds?: readonly string[];
     },
   ): Promise<LlmResponse> {
     if (!Number.isFinite(options.timeoutMs) || options.timeoutMs <= 0) {
@@ -34,9 +35,10 @@ export class OllamaClassificationLlm implements ClassificationLlm {
       model: this.config.model,
       stream: false,
       options: { temperature: 0 },
+      ...(this.config.think !== undefined ? { think: this.config.think } : {}),
       messages: toOllamaMessages(messages),
       ...(options.toolsEnabled
-        ? { tools: [incidentLookupTool] }
+        ? { tools: [restrictedIncidentLookupTool(options.eligibleIncidentIds ?? [])] }
         : { format: toolCallingFinalSchema }),
     });
     const text = await postToolCallingChat(

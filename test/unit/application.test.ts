@@ -50,7 +50,7 @@ test('I001-AC-11 I006-AC-14/24 caso de uso I006 independiente y propagación de 
           { role: 'system', content: 'Classification test instructions' },
           { role: 'user', content: 'text' },
         ]);
-        assert.equal(options.toolsEnabled, calls === 1);
+        assert.equal(options.toolsEnabled, false);
         if (options.toolsEnabled) {
           return { type: 'no_lookup' };
         }
@@ -62,7 +62,7 @@ test('I001-AC-11 I006-AC-14/24 caso de uso I006 independiente y propagación de 
     status: 'CLASSIFIED',
     category: 'FEATURE',
   });
-  assert.equal(calls, 2);
+  assert.equal(calls, 1);
   const error = new ClassificationError('timeout');
   dependencies.llm.infer = async () => {
     throw error;

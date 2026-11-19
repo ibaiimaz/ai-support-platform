@@ -30,9 +30,16 @@ test('I006-AC-01/02/14/17 decision text is ignored, including invalid JSON and t
       requests++;
       return wrap({ role: 'assistant', ...(content === undefined ? {} : { content }) });
     });
-    assert.deepEqual(await adapter.infer([], { toolsEnabled: true, timeoutMs: 45000 }), {
-      type: 'no_lookup',
-    });
+    assert.deepEqual(
+      await adapter.infer([], {
+        toolsEnabled: true,
+        eligibleIncidentIds: ['INC-142'],
+        timeoutMs: 45000,
+      }),
+      {
+        type: 'no_lookup',
+      },
+    );
     assert.equal(requests, 1);
   }
 });
@@ -48,17 +55,24 @@ test('I006-AC-08/14/17 decision protocol remains strict; malformed content, call
   ]) {
     const adapter = new OllamaClassificationLlm(config, async () => wrap(message));
     await assert.rejects(
-      adapter.infer([], { toolsEnabled: true, timeoutMs: 45000 }),
+      adapter.infer([], { toolsEnabled: true, eligibleIncidentIds: ['INC-142'], timeoutMs: 45000 }),
       (error) => error instanceof ClassificationError && error.kind === 'invalid_response',
     );
   }
   const adapter = new OllamaClassificationLlm(config, async () =>
     wrap({ role: 'assistant', tool_calls: [] }),
   );
-  assert.deepEqual(await adapter.infer([], { toolsEnabled: true, timeoutMs: 45000 }), {
-    type: 'tool_calls',
-    calls: [],
-  });
+  assert.deepEqual(
+    await adapter.infer([], {
+      toolsEnabled: true,
+      eligibleIncidentIds: ['INC-142'],
+      timeoutMs: 45000,
+    }),
+    {
+      type: 'tool_calls',
+      calls: [],
+    },
+  );
 });
 
 test('I006-AC-01/09/14 classifications cannot escape the decision phase and no_lookup cannot escape the final phase', async () => {
@@ -85,7 +99,7 @@ test('I006-AC-01/09/14 classifications cannot escape the decision phase and no_l
             },
           },
         },
-        'text',
+        'text INC-142',
       ),
       (error) => error instanceof ClassificationError && error.kind === 'invalid_response',
     );
@@ -108,7 +122,7 @@ test('I006-AC-01/09/14 classifications cannot escape the decision phase and no_l
           },
         },
       },
-      'text',
+      'text INC-142',
     ),
     InvalidToolCallError,
   );
@@ -152,9 +166,7 @@ test('I006-AC-19/21/26 final technical failure retains known no_lookup and repor
       classificationInstructions: 'final',
       llm: {
         async infer() {
-          if (calls++ === 0) {
-            return { type: 'no_lookup' };
-          }
+          calls++;
           throw new ClassificationError('invalid_response', 'FINAL_SCHEMA_INVALID');
         },
       },
@@ -166,15 +178,15 @@ test('I006-AC-19/21/26 final technical failure retains known no_lookup and repor
     },
     { async reserve() {}, async record() {} },
   );
-  assert.equal(calls, 2);
+  assert.equal(calls, 1);
   assert.equal(results.length, 1);
   assert.deepEqual(results[0]!.phases, {
     decision: {
-      started: true,
-      attempts: 1,
-      dispatched: 1,
+      started: false,
+      attempts: 0,
+      dispatched: 0,
       reservationUncertain: false,
-      status: 'COMPLETED',
+      status: 'NOT_STARTED',
     },
     classification: {
       started: true,
@@ -193,10 +205,10 @@ test('I006-AC-19/21/26 final technical failure retains known no_lookup and repor
   );
 });
 
-test('I006-AC-20/21/23 policy-evaluable rejection does not add a hidden 120-attempt acceptance threshold', async () => {
+test('I006-AC-20/21/23 policy-evaluable rejection does not add a hidden fixed-attempt acceptance threshold', async () => {
   const dataset = await candidate();
   const results = perfectResults(dataset);
-  const rejected = results[0]!;
+  const rejected = results[10]!;
   rejected.outcome = 'POLICY_VIOLATION';
   rejected.error = 'invalid_tool_call';
   rejected.failurePhase = 'decision';
@@ -226,16 +238,16 @@ test('I006-AC-20/21/23 policy-evaluable rejection does not add a hidden 120-atte
   assert.equal(report.status, 'COMPLETE_PASSED');
   assert.equal(
     results.reduce((sum, result) => sum + result.observation.inferenceCount, 0),
-    119,
+    103,
   );
   assert.equal(report.metrics.classification.numerator, 49);
   assert.equal(report.metrics.classification.denominator, 50);
   assert.equal(report.metrics.precision.denominator, 34);
   assert.equal(report.schemaVersion, 2);
-  assert.equal(report.protocolId, 'I006-DECISION-CLASSIFICATION-V1');
+  assert.equal(report.protocolId, 'I006-HYBRID-CLASSIFICATION-V1');
 });
 
-test('I006-AC-22/26 real adapter and orchestration process 60 simulated cases in 120 phase-identified attempts', async () => {
+test('I006-AC-22/26 real adapter and orchestration process 60 simulated cases in 104 phase-identified attempts', async () => {
   const dataset = await candidate();
   let current = dataset.examples[0]!;
   let requests = 0;
@@ -274,15 +286,18 @@ test('I006-AC-22/26 real adapter and orchestration process 60 simulated cases in
     async record() {},
   });
   const report = buildReport(dataset, identity, results, new Date().toISOString());
-  assert.equal(requests, 120);
+  assert.equal(requests, 104);
   assert.equal(results.length, 60);
   assert.equal(report.status, 'COMPLETE_PASSED');
   assert.ok(
     results.every(
       (result) =>
-        result.phases.decision.status === 'COMPLETED' &&
+        (result.observation.decisionSource === 'CODE'
+          ? result.phases.decision.status === 'NOT_STARTED'
+          : result.phases.decision.status === 'COMPLETED') &&
         result.phases.classification.status === 'COMPLETED' &&
-        result.observation.inferenceCount === 2,
+        result.observation.inferenceCount ===
+          (result.observation.decisionSource === 'CODE' ? 1 : 2),
     ),
   );
 });
@@ -301,7 +316,7 @@ test('I006-AC-19/26 report rejects inconsistent phase counters, crossed states a
     },
   ]) {
     const results = perfectResults(dataset);
-    mutation(results[0]!);
+    mutation(results[10]!);
     assert.throws(
       () => buildReport(dataset, identity, results, new Date().toISOString()),
       /Invalid/,

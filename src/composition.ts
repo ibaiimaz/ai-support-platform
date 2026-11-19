@@ -6,11 +6,11 @@ import { lookupDecisionInstructions } from './infrastructure/ollama/lookup-decis
 import { classificationFinalInstructions } from './infrastructure/ollama/classification-final-instructions.js';
 
 export function createClassificationDependencies(
-  config: Pick<Config, 'baseUrl' | 'model'>,
+  config: Pick<Config, 'baseUrl' | 'model'> & { think?: boolean },
   request: typeof fetch = fetch,
 ): ToolCallingDependencies {
   return {
-    llm: new OllamaClassificationLlm({ baseUrl: config.baseUrl, model: config.model }, request),
+    llm: new OllamaClassificationLlm(config, request),
     repository: new SyntheticIncidentRepository(),
     systemInstructions: lookupDecisionInstructions,
     classificationInstructions: classificationFinalInstructions,

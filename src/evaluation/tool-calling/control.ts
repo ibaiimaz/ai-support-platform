@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { classificationProtocolId } from './protocol.js';
+import { classificationProtocolId, plannedPhases } from './protocol.js';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -26,7 +26,7 @@ export interface Authorization {
   execute: boolean;
   identityHash: string | null;
   approvalReference: string | null;
-  maximumInferences: 120;
+  maximumInferences: 104;
 }
 
 const hash = { type: ['string', 'null'], pattern: '^[a-f0-9]{64}$' };
@@ -55,7 +55,7 @@ const validate = new Ajv({ strictTypes: false }).compile<Authorization>({
     execute: { type: 'boolean' },
     identityHash: hash,
     approvalReference: { type: ['string', 'null'], minLength: 1 },
-    maximumInferences: { const: 120 },
+    maximumInferences: { const: 104 },
   },
 });
 
@@ -120,6 +120,13 @@ export async function withControl<T>(
   );
   await mkdir(directory, { recursive: true, mode: 0o700 });
   return locked(directory, async () => {
+    const maximumInferences = dataset.examples.reduce(
+      (sum, example) => sum + plannedPhases(example.description).length,
+      0,
+    );
+    if (maximumInferences > 104) {
+      throw new Error('Dataset exceeds approved hybrid budget');
+    }
     const identityHash = sha256(JSON.stringify(identity));
     const authorize = async (phase: 'initialize' | 'execute') =>
       requireAuthorization(await readAuthorization(authorizationPath), identity, phase);
@@ -239,12 +246,12 @@ export async function withControl<T>(
           ledger.pending !== null ||
           ledger.phase !== 'RUNNING' ||
           dataset.examples[ledger.results.length]?.id !== example.id ||
-          ledger.reservedSlots + 2 > 120
+          ledger.reservedSlots + plannedPhases(example.description).length > maximumInferences
         ) {
           throw new Error('I006 reservation blocked');
         }
         ledger.pending = example.id;
-        ledger.reservedSlots += 2;
+        ledger.reservedSlots += plannedPhases(example.description).length;
         await writeLedger();
       },
       async attempt(example, phase) {
@@ -261,9 +268,9 @@ export async function withControl<T>(
             stopped ||
             ledger.pending !== example.id ||
             ledger.phase !== 'RUNNING' ||
-            ledger.observedAttempts >= 120 ||
+            ledger.observedAttempts >= maximumInferences ||
             previous.length >= 2 ||
-            phase !== (previous.length === 0 ? 'decision' : 'classification')
+            phase !== plannedPhases(example.description)[previous.length]
           ) {
             throw new Error('Inference attempt blocked');
           }

@@ -1,4 +1,4 @@
-import { classificationProtocolId } from './protocol.js';
+import { classificationProtocolId, classificationCohort, plannedPhases } from './protocol.js';
 import { invalidResponseDiagnostics } from '../../application/classification-errors.js';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -40,6 +40,7 @@ const validateResult = new Ajv({ strictTypes: false }).compile<CaseResult>(
       id: { type: 'string', pattern: '^I006-[0-9]{3}$' },
       outcome: { enum: ['COMPLETED', 'POLICY_VIOLATION', 'TECHNICAL_ERROR'] },
       observation: object({
+        decisionSource: { enum: ['CODE', 'LLM'] },
         toolRequested: nullableBoolean,
         toolRequestValid: nullableBoolean,
         toolExecuted: { type: 'boolean' },
@@ -52,7 +53,10 @@ const validateResult = new Ajv({ strictTypes: false }).compile<CaseResult>(
           type: 'array',
           items: { type: 'string', pattern: '^INC-[1-9][0-9]{0,5}$' },
         },
-        violations: { type: 'array', items: { const: 'INVALID_MULTIPLE_OR_ADDITIONAL_REQUEST' } },
+        violations: {
+          type: 'array',
+          items: { enum: ['INVALID_MULTIPLE_OR_ADDITIONAL_REQUEST', 'INELIGIBLE_INCIDENT_ID'] },
+        },
       }),
       final: {
         anyOf: [
@@ -100,6 +104,17 @@ export function buildReport(
   for (const result of results) {
     if (
       !validateResult(result) ||
+      dataset.examples.find((example) => example.id === result.id) === undefined ||
+      result.observation.decisionSource !==
+        (plannedPhases(dataset.examples.find((example) => example.id === result.id)!.description)
+          .length === 1
+          ? 'CODE'
+          : 'LLM') ||
+      (result.observation.decisionSource === 'CODE' &&
+        (result.phases.decision.started ||
+          result.observation.toolExecuted ||
+          result.observation.executionCount !== 0 ||
+          result.observation.toolOutcome !== null)) ||
       result.phases.decision.attempts + result.phases.classification.attempts !==
         result.observation.inferenceCount ||
       Object.values(result.phases).some(
@@ -113,7 +128,8 @@ export function buildReport(
             (phase.attempts !== 1 || phase.dispatched !== 1 || phase.reservationUncertain)),
       ) ||
       (result.outcome === 'COMPLETED' &&
-        (result.phases.decision.status !== 'COMPLETED' ||
+        ((result.observation.decisionSource === 'LLM' &&
+          result.phases.decision.status !== 'COMPLETED') ||
           result.phases.classification.status !== 'COMPLETED')) ||
       (result.outcome === 'COMPLETED') !== (result.failurePhase === null) ||
       (result.outcome === 'POLICY_VIOLATION' &&
@@ -157,14 +173,60 @@ export function buildReport(
       version: dataset.version,
       cases: dataset.examples.length,
       pairs: dataset.counterfactualPairs.length,
+      cohort: classificationCohort,
+    },
+    assessment: {
+      scope: 'COHORT_THRESHOLDS_ONLY',
+      independentValidation: 'NOT_EVALUATED',
+      iterationAcceptance: 'NOT_GRANTED',
     },
     results: structuredClone(results),
     metrics,
     diagnostics: calculateDiagnostics(dataset, results),
+    segments: {
+      CODE: segmentReport(dataset, results, 'CODE'),
+      LLM: segmentReport(dataset, results, 'LLM'),
+    },
     status: !complete ? 'INCOMPLETE' : passed ? 'COMPLETE_PASSED' : 'COMPLETE_FAILED',
     deterministicGate: 'NOT_EVALUATED',
-    experimentalGate: !complete ? 'INCOMPLETE' : passed ? 'PASSED' : 'FAILED',
+    thresholdGate: !complete ? 'INCOMPLETE' : passed ? 'PASSED' : 'FAILED',
+    // Known regression thresholds cannot satisfy independent experimental acceptance.
+    experimentalGate: 'NOT_EVALUATED',
     totalLatencyMs: results.reduce((sum, result) => sum + result.latencyMs, 0),
+  };
+}
+
+function segmentReport(
+  dataset: EvaluationDataset,
+  results: CaseResult[],
+  source: 'CODE' | 'LLM',
+): EvaluationReport['segments']['CODE'] {
+  const examples = dataset.examples.filter(
+    (example) => (plannedPhases(example.description).length === 1 ? 'CODE' : 'LLM') === source,
+  );
+  const ids = new Set(examples.map((example) => example.id));
+  const subset = results.filter((result) => ids.has(result.id));
+  const selected = {
+    ...dataset,
+    examples,
+    counterfactualPairs: dataset.counterfactualPairs.filter((pair) =>
+      pair.caseIds.every((id) => ids.has(id)),
+    ),
+  };
+  return {
+    interpretation: 'DESCRIPTIVE_ONLY',
+    bindingThresholds: false,
+    cases: examples.length,
+    evaluable: subset.filter((result) => result.outcome !== 'TECHNICAL_ERROR').length,
+    toolDecisionsCorrect: subset.filter((result) => result.observation.toolDecisionCorrect === true)
+      .length,
+    finalCorrect: subset.filter((result) => {
+      const expected = examples.find((example) => example.id === result.id)!.expectedFinal;
+      return (
+        result.final?.status === expected.status && result.final?.category === expected.category
+      );
+    }).length,
+    metrics: calculateMetrics(selected, subset),
   };
 }
 

@@ -83,12 +83,19 @@ for (const [diagnostic, response] of [
         return response();
       },
     );
-    await assert.rejects(adapter.infer([], { timeoutMs: 45_000, toolsEnabled: true }), (error) => {
-      assert.ok(error instanceof ClassificationError);
-      assert.equal(error.kind, 'invalid_response');
-      assert.equal(error.diagnostic, diagnostic);
-      return true;
-    });
+    await assert.rejects(
+      adapter.infer([], {
+        timeoutMs: 45_000,
+        toolsEnabled: true,
+        eligibleIncidentIds: ['INC-142'],
+      }),
+      (error) => {
+        assert.ok(error instanceof ClassificationError);
+        assert.equal(error.kind, 'invalid_response');
+        assert.equal(error.diagnostic, diagnostic);
+        return true;
+      },
+    );
     assert.equal(requests, 1);
   });
 }

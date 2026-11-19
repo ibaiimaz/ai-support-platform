@@ -1,6 +1,18 @@
 # I006 — Dataset y runner de evaluación
 
-Estado normativo: [I006, revisión 6](../../specs/iterations/006-tool-calling.md), aprobada el **2026-11-18**, y [ADR-003](../../specs/adr/ADR-003-separate-lookup-decision-and-classification.md). La separación de decisión y clasificación está implementada con tests deterministas y aceptada por el responsable el 2026-11-18 tras segunda revisión independiente APPROVED; la evaluación real sigue pendiente. Los comandos actuales utilizan exclusivamente el protocolo de revisión 6; no reabren la ejecución original.
+## Estado vigente: I006 revisión 7 — 2026-11-19
+
+La revisión independiente final ha concluido **APPROVED**, incluido el hallazgo MEDIUM del alcance de cohorte. La implementación queda aprobada técnicamente para preparar la validación; sustituye las declaraciones anteriores de revisión técnica pendiente. I006 permanece **Implemented**, sin aceptación definitiva ni puerta experimental superada.
+
+Diseño aprobado e implementación autorizada de la [arquitectura híbrida](../../specs/iterations/006-tool-calling.md#19-revisión-7--diseño-aprobado-implementación-autorizada). Las descripciones de revisiones anteriores que siguen se conservan como antecedentes, no como protocolo actual.
+
+La descripción original determina las referencias elegibles: sin IDs válidos, NO_LOOKUP desde backend y una inferencia final estructurada; con IDs, decisión nativa con enum y validación de pertenencia posterior, consulta opcional y clasificación final (dos inferencias). Máximo una herramienta, sin reintentos, 45/5/90 s; HTTP y rutas I002–I005 intactos. El texto libre de decisión no se utiliza.
+
+Qwen3 8B Q4_K_M es candidato, digest `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`, temperatura 0, think false. La composición de evaluación lo prepara explícitamente; `loadConfig` conserva Llama por defecto, sin despliegue ni promoción. La adición de definiciones al prompt es hipótesis no evaluada.
+
+Protocolo `I006-HYBRID-CLASSIFICATION-V1`, manifiesto `evals/experiments/i006-hybrid-manifest.json`, evidencias previstas en `evals/reports/i006-hybrid/`: permisos false, identidad null, sin inicialización. Regresión conocida de 60 casos (16 sin IDs, 44 con IDs), máximo 104 intentos. No es validación independiente. Métricas CODE/LLM segmentadas informativas sin nuevos umbrales. Se conservan íntegros los manifiestos y las evidencias anteriores; los diagnósticos retirados siguen bloqueados. Revisión 7 pendiente de revisión independiente y validación experimental; I006 no está Verified ni aceptada.
+
+Estado normativo: [I006, revisión 6](../../specs/iterations/006-tool-calling.md), aprobada el **2026-11-18**, y [ADR-003](../../specs/adr/ADR-003-separate-lookup-decision-and-classification.md). La separación de decisión y clasificación está implementada con tests deterministas y aceptada por el responsable el 2026-11-18 tras segunda revisión independiente APPROVED; la evaluación real sigue pendiente. Como antecedente, los comandos de revisión 6 utilizaban su propio protocolo; el CLI actual prepara exclusivamente revisión 7 y no reabren la ejecución original.
 
 El dataset v3 continúa aprobado y congelado. El experimento original y todos los diagnósticos anteriores están cerrados, con permisos desactivados. Esta guía no autoriza repetirlos, inicializarlos ni reutilizar sus presupuestos.
 
@@ -188,7 +200,7 @@ Total observado de esos ámbitos independientes: seis inferencias. No es consumo
 
 El diagnóstico posterior no recupera la respuesta del intento original. La prueba de tools + format no demuestra causalidad de la ausencia de herramienta ni autoriza adoptarlos simultáneamente. Los textos y respuestas crudas no se conservaron; sus límites diagnósticos siguen vigentes.
 
-## Protocolo de revisión 6 implementado — ejecución real pendiente
+## Antecedente: protocolo de revisión 6 implementado (sustituido por revisión 7)
 
 La [sección 13 normativa](../../specs/iterations/006-tool-calling.md#protocolo-de-revisión-6-dos-fases-por-caso) define el protocolo `I006-DECISION-CLASSIFICATION-V1`; las fórmulas y umbrales de esta guía siguen iguales.
 
@@ -212,3 +224,25 @@ El nuevo ledger utiliza esquema 2, protocolo explícito y fases READY/RUNNING/CL
 Inmediatamente antes de enviar se vuelven a comprobar autorización, código, configuración, marcador y bytes del ledger. El transporte protegido impide un tercer envío y envíos después del cierre o cancelación. Se espera el asentamiento de reservas pendientes manteniendo el lock. Un fallo de persistencia bloquea; puede impedir guardar un informe, pero no habilita repetición ni reanudación. Se conservan resultados y checkpoints ya durables. No hay recuperación automática de presupuestos ni garantías frente a borrado deliberado o restauración simultánea de todos los controles.
 
 Los comandos `smoke:i006`, `diagnose:i006-first-inference` y `diagnose:i006-tools-format` están retirados bajo revisión 6, incluidos sus modos de comprobación. Rechazan con `I006_DIAGNOSTIC_RETIRED` antes de cualquier acceso a autorizaciones, reservas, proveedores o evidencias. Sus fuentes originales permanecen en Git; los informes, hashes y controles históricos no se modifican. Las utilidades de transporte reutilizadas no habilitan esas entradas ni conservan una segunda implementación productiva.
+
+## Operación preparada para revisión 7
+
+`npm run eval:tool-calling -- --validate` valida sin inferencias. `--identity` consulta únicamente metadatos de Ollama, comprueba digest Qwen/Q4_K_M y versión 0.40.14, correspondencia fuente/build e identifica ambos prompts y los schemas dinámicos por caso. No crea controles. Después de revisión independiente y autorización humana se podrán preparar por separado `--initialize` y `--execute`; ambos están bloqueados actualmente.
+
+El CLI utiliza `i006-hybrid-manifest.json` y `evals/reports/i006-hybrid/`; no selecciona namespaces históricos desde argumentos. Fija `qwen3:8b`, digest completo `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`, Q4_K_M, temperatura 0, think false, plantillas y parámetros heredados identificados por metadatos. No cambia `loadConfig` productivo. No se adopta tools + format simultáneo.
+
+Extracción únicamente del mensaje original, con límites Unicode de letras/marcas/números/guion/guion bajo y normalización exclusiva del prefijo. Sin IDs: origen CODE, fase decision NOT_STARTED y una clasificación. Con IDs: origen LLM, enum dinámico, validación posterior de pertenencia, decisión y clasificación; la presencia de ID no obliga a consultar ni concede acceso. Máximo una herramienta y sin reparaciones/reintentos. El prompt añade definiciones oficiales como hipótesis no evaluada, sin ejemplos del conjunto.
+
+Reserva durable de uno o dos slots antes del caso, journal de cada intento antes de enviar y fase derivada de la ruta, nunca del ordinal global. Para 16/44 casos la cota es 104, no 120; una reserva no usada no se libera. Se mantiene la separación inicio lógico/reserva/envío y el saneamiento control_error con parcial cuando sea persistible. Lock, cierre, incertidumbres, archivos ausentes y fallos de persistencia siguen bloqueando reinicios. No hay reanudación ni recuperación automática.
+
+El informe persistido y el resumen CLI identifican `dataset.cohort: KNOWN_REGRESSION` (CLI: `cohort`). `thresholdGate` informa PASSED/FAILED/INCOMPLETE únicamente respecto a los umbrales de esta cohorte; los estados COMPLETE_PASSED/COMPLETE_FAILED/INCOMPLETE tienen ese mismo alcance. Aunque se superen todos los umbrales, `experimentalGate` e `assessment.independentValidation` siguen NOT_EVALUATED. `assessment.scope` es COHORT_THRESHOLDS_ONLY y `assessment.iterationAcceptance` es NOT_GRANTED. Ningún estado concede aceptación de I006. La futura cohorte independiente deberá prepararse y autorizarse expresamente, sin reutilizar la atribución del conjunto conocido.
+
+Cada segmento incorpora `interpretation: DESCRIPTIVE_ONLY` y `bindingThresholds: false`. No hay umbrales adicionales vinculantes; las referencias numéricas de sus métricas son descriptivas.
+
+Los informes distinguen decisionSource CODE/LLM, fases, solicitudes, validez, ID solicitado, ejecuciones y resultado. INELIGIBLE_INCIDENT_ID identifica de forma segura el rechazo de pertenencia; no conserva argumentos arbitrarios. Los cinco umbrales globales y los diagnósticos de abstención no cambian. `segments.CODE` y `segments.LLM` muestran contadores y las mismas fórmulas con denominadores explícitos; sus comparaciones de umbral son informativas y **no intervienen en el gate**. Una consulta bloqueada no cuenta como acierto del modelo. Un segmento sin solicitudes puede tener precision null. La consistencia contrafactual segmentada incluye solo pares enteramente pertenecientes al segmento; los pares cruzados siguen presentes en la métrica global.
+
+El conjunto de 60 casos es regresión conocida, no holdout; se preserva íntegro. No hay resultados reales de revisión 7, ni inicialización ni permisos efectivos habilitados. La nueva identidad queda pendiente de revisión/aprobación y cambiará si cambian bytes relevantes o commit. Los controles anteriores y todas sus evidencias permanecen intactos.
+
+### Preparación comprobada — 2026-11-19
+
+Implementación R7: verificación integral 317/317 y comprobación adicional 51/51, sin inferencias reales. Identidad efectiva calculada mediante metadatos locales y comprobación fuente/build: `e3318481709c2aa03a2757fdd1bfd9f63bed202c05cfb02ec227b1d91ca10fd0`. Referencia Git `ab4df43` más fuentes/build modificados sin commit; no representa una identidad humana aprobada. Un commit posterior o cambio relevante exige recalcularla. El manifiesto conserva identityHash null, initialize false y execute false. No existe el directorio de controles R7.

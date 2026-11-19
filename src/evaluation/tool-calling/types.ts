@@ -52,6 +52,7 @@ export interface EvaluationDataset {
 }
 
 export interface Observation {
+  decisionSource: 'CODE' | 'LLM';
   toolRequested: boolean | null;
   toolRequestValid: boolean | null;
   toolExecuted: boolean;
@@ -141,6 +142,7 @@ export interface RunIdentity {
   sourceStateHash: string;
   baseUrl: string;
   temperature: 0;
+  think: false;
   llmTimeoutMs: 45000;
   toolTimeoutMs: 5000;
   globalTimeoutMs: 90000;
@@ -153,12 +155,37 @@ export interface EvaluationReport {
   startedAt: string;
   finishedAt: string;
   identity: RunIdentity;
-  dataset: { id: string; schemaVersion: number; version: number; cases: number; pairs: number };
+  dataset: {
+    id: string;
+    schemaVersion: number;
+    version: number;
+    cases: number;
+    pairs: number;
+    cohort: 'KNOWN_REGRESSION' | 'INDEPENDENT';
+  };
+  assessment: {
+    scope: 'COHORT_THRESHOLDS_ONLY';
+    independentValidation: 'NOT_EVALUATED';
+    iterationAcceptance: 'NOT_GRANTED';
+  };
   results: CaseResult[];
   metrics: EvaluationMetrics;
   diagnostics: EvaluationDiagnostics;
+  segments: Record<
+    'CODE' | 'LLM',
+    {
+      interpretation: 'DESCRIPTIVE_ONLY';
+      bindingThresholds: false;
+      cases: number;
+      evaluable: number;
+      toolDecisionsCorrect: number;
+      finalCorrect: number;
+      metrics: EvaluationMetrics;
+    }
+  >;
   status: 'INCOMPLETE' | 'COMPLETE_FAILED' | 'COMPLETE_PASSED';
   deterministicGate: 'NOT_EVALUATED';
-  experimentalGate: 'INCOMPLETE' | 'FAILED' | 'PASSED';
+  thresholdGate: 'INCOMPLETE' | 'FAILED' | 'PASSED';
+  experimentalGate: 'NOT_EVALUATED' | 'INCOMPLETE' | 'FAILED' | 'PASSED';
   totalLatencyMs: number;
 }

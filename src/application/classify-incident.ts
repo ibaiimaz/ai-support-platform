@@ -7,7 +7,8 @@ import {
   assertFinalResponse,
   classificationResult,
 } from './classification-response.js';
-import { getIncidentById, type IncidentToolResult } from './get-incident-by-id.js';
+import { extractIncidentReferences } from './incident-references.js';
+import { readIncidentId, getIncidentById, type IncidentToolResult } from './get-incident-by-id.js';
 import { IncidentRepositoryError, InvalidToolCallError } from './tool-calling-errors.js';
 
 export interface ToolCallingDependencies {
@@ -27,21 +28,28 @@ export async function classifyIncident(
     { role: 'system', content: dependencies.systemInstructions },
     { role: 'user', content: description },
   ];
-  const first = await deadline.run('llm', (timeoutMs) =>
-    dependencies.llm.infer(messages, { timeoutMs, toolsEnabled: true }),
-  );
-  assertLookupDecision(first);
+  const eligibleIncidentIds = extractIncidentReferences(description);
+  const decision =
+    eligibleIncidentIds.length === 0
+      ? { type: 'no_lookup' as const }
+      : await deadline.run('llm', (timeoutMs) =>
+          dependencies.llm.infer(messages, { timeoutMs, toolsEnabled: true, eligibleIncidentIds }),
+        );
+  assertLookupDecision(decision);
   deadline.check();
-  const secondMessages: LlmMessage[] = [
+  const classificationMessages: LlmMessage[] = [
     { role: 'system', content: dependencies.classificationInstructions },
     { role: 'user', content: description },
   ];
   let toolResult: IncidentToolResult | undefined;
-  if (first.type === 'tool_calls') {
-    if (first.calls.length !== 1) {
+  if (decision.type === 'tool_calls') {
+    if (decision.calls.length !== 1) {
       throw new InvalidToolCallError();
     }
-    const call = first.calls[0]!;
+    const call = decision.calls[0]!;
+    if (!eligibleIncidentIds.includes(readIncidentId(call))) {
+      throw new InvalidToolCallError();
+    }
     try {
       toolResult = await deadline.run('tool', (timeoutMs) =>
         getIncidentById(dependencies.repository, call, { timeoutMs }),
@@ -53,8 +61,8 @@ export async function classifyIncident(
       deadline.check();
       toolResult = { status: 'UNAVAILABLE' };
     }
-    secondMessages.push(
-      { role: 'assistant', toolCalls: first.calls },
+    classificationMessages.push(
+      { role: 'assistant', toolCalls: decision.calls },
       {
         role: 'tool',
         name: call.name,
@@ -63,13 +71,13 @@ export async function classifyIncident(
       },
     );
   }
-  const second = await deadline.run('llm', (timeoutMs) =>
-    dependencies.llm.infer(secondMessages, { timeoutMs, toolsEnabled: false }),
+  const finalResponse = await deadline.run('llm', (timeoutMs) =>
+    dependencies.llm.infer(classificationMessages, { timeoutMs, toolsEnabled: false }),
   );
-  assertFinalResponse(second);
+  assertFinalResponse(finalResponse);
   deadline.check();
-  if (second.type === 'tool_calls') {
+  if (finalResponse.type === 'tool_calls') {
     throw new InvalidToolCallError();
   }
-  return classificationResult(second, toolResult?.status === 'UNAVAILABLE');
+  return classificationResult(finalResponse, toolResult?.status === 'UNAVAILABLE');
 }

@@ -1,3 +1,4 @@
+import { extractIncidentReferences } from '../../application/incident-references.js';
 import type { ToolCallingDependencies } from '../../application/classify-incident.js';
 import {
   assertFinalResponse,
@@ -14,7 +15,9 @@ import type {
 } from './types.js';
 
 export function observe(dependencies: ToolCallingDependencies, example: EvaluationCase) {
+  const eligible = extractIncidentReferences(example.description);
   const observation: Observation = {
+    decisionSource: eligible.length === 0 ? 'CODE' : 'LLM',
     toolRequested: false,
     toolRequestValid: null,
     toolExecuted: false,
@@ -79,7 +82,12 @@ export function observe(dependencies: ToolCallingDependencies, example: Evaluati
             let valid = response.calls.length === 1 && options.toolsEnabled;
             for (const call of response.calls) {
               try {
-                observation.requestedIds.push(readIncidentId(call));
+                const id = readIncidentId(call);
+                observation.requestedIds.push(id);
+                if (!eligible.includes(id)) {
+                  observation.violations.push('INELIGIBLE_INCIDENT_ID');
+                  valid = false;
+                }
               } catch {
                 valid = false;
               }
@@ -147,7 +155,7 @@ export function observe(dependencies: ToolCallingDependencies, example: Evaluati
     },
     close(evaluable: boolean): Observation {
       closed = true;
-      if (!phases.decision.started) {
+      if (!phases.decision.started && observation.decisionSource === 'LLM') {
         observation.toolRequested = null;
       }
       observation.toolDecisionCorrect = !evaluable

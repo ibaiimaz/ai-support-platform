@@ -1,6 +1,7 @@
 import { readFile, readdir, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { extractIncidentReferences } from '../../application/incident-references.js';
 import { createClassificationDependencies } from '../../composition.js';
 import { loadConfig, type Config } from '../../config.js';
 import { lookupDecisionInstructions } from '../../infrastructure/ollama/lookup-decision-instructions.js';
@@ -13,11 +14,14 @@ import {
 } from '../independent-validation/code-state.js';
 import {
   classificationProtocolId,
+  classificationCohort,
+  candidateModel,
+  plannedPhases,
   classificationAuthorizationFile,
   classificationReportsDirectory,
 } from './protocol.js';
 import {
-  incidentLookupTool,
+  restrictedIncidentLookupTool,
   toolCallingFinalSchema,
 } from '../../infrastructure/ollama/tool-calling-protocol.js';
 import { sha256 } from '../dataset.js';
@@ -27,6 +31,10 @@ import { loadDataset } from './dataset.js';
 import { buildReport, saveReport } from './report.js';
 import { runEvaluation } from './run.js';
 import type { CaseResult, RunIdentity, EvaluationDataset } from './types.js';
+
+function candidateConfiguration() {
+  return { ...loadConfig(), model: candidateModel.model, think: candidateModel.think };
+}
 
 async function treeIdentity(root: string): Promise<string> {
   const entries: [string, string][] = [];
@@ -77,14 +85,24 @@ export async function effectiveIdentity(
   code = captureCodeIdentity(root, snapshotBuild(join(root, 'dist'))),
 ): Promise<RunIdentity> {
   code.verify();
-  const config = loadConfig();
+  const frozen = await loadDataset(join(root, 'evals/datasets/incidents-tool-calling-v1.json'));
+  if (frozen.hash !== datasetHash) {
+    throw new Error('Dataset identity changed');
+  }
+  const config = candidateConfiguration();
   const tags = (await metadata(config.baseUrl, '/api/tags')) as {
     models?: { name: string; digest: string }[];
   };
   const model = tags.models?.find((item) => item.name === config.model);
   const version = (await metadata(config.baseUrl, '/api/version')) as { version?: string };
   const show = await metadata(config.baseUrl, '/api/show', { model: config.model });
-  if (!model || !/^[a-f0-9]{64}$/.test(model.digest) || typeof version.version !== 'string') {
+  if (
+    !model ||
+    model.digest !== candidateModel.digest ||
+    version.version !== '0.40.14' ||
+    (show as { details?: { quantization_level?: string } }).details?.quantization_level !==
+      candidateModel.quantization
+  ) {
     throw new Error('Cannot establish model identity');
   }
   return {
@@ -98,12 +116,22 @@ export async function effectiveIdentity(
     classificationPromptHash: sha256(classificationFinalInstructions),
     codeIdentity: code.identity,
     protocolHash: sha256(
-      JSON.stringify({ tool: incidentLookupTool, schema: toolCallingFinalSchema }),
+      JSON.stringify({
+        schema: toolCallingFinalSchema,
+        toolsByCase: frozen.dataset.examples.map((example) => {
+          const ids = extractIncidentReferences(example.description);
+          return {
+            id: example.id,
+            tool: ids.length === 0 ? null : restrictedIncidentLookupTool(ids),
+          };
+        }),
+      }),
     ),
     codeReference: findCodeReference(root),
     sourceStateHash: await treeIdentity(root),
     baseUrl: config.baseUrl,
     temperature: 0,
+    think: false,
     llmTimeoutMs: 45000,
     toolTimeoutMs: 5000,
     globalTimeoutMs: 90000,
@@ -114,7 +142,7 @@ export async function runControlledEvaluation(
   dataset: EvaluationDataset,
   control: DurableRunControl,
   options: {
-    config: Pick<Config, 'baseUrl' | 'model'>;
+    config: Pick<Config, 'baseUrl' | 'model'> & { think?: boolean };
     request: typeof fetch;
     verifyCase: () => Promise<void>;
     verifyDispatch: () => void;
@@ -156,7 +184,7 @@ export async function runControlledEvaluation(
           },
           async reserve(attempt) {
             try {
-              await control.attempt(example, attempt === 1 ? 'decision' : 'classification');
+              await control.attempt(example, plannedPhases(example.description)[attempt - 1]!);
             } catch {
               controlFailure = true;
               throw new Error('I006 reservation control failed');
@@ -210,12 +238,24 @@ export async function main(root = process.cwd(), args = process.argv.slice(2)): 
   const datasetPath = join(root, 'evals/datasets/incidents-tool-calling-v1.json');
   const { dataset, hash } = await loadDataset(datasetPath);
   if (action === '--validate') {
+    const authorization = await readAuthorization(
+      join(root, 'evals/experiments', classificationAuthorizationFile),
+    );
+    if (authorization.datasetHash !== hash || authorization.datasetReview !== 'APPROVED_FROZEN') {
+      throw new Error('Frozen dataset identity mismatch');
+    }
     console.log(
       JSON.stringify({
         dataset: dataset.id,
         version: dataset.version,
         cases: dataset.examples.length,
-        review: 'PENDING_HUMAN_REVIEW',
+        review: authorization.datasetReview,
+        datasetHash: hash,
+        cohort: classificationCohort,
+        maximumInferences: dataset.examples.reduce(
+          (sum, example) => sum + plannedPhases(example.description).length,
+          0,
+        ),
       }),
     );
     return 0;
@@ -246,7 +286,7 @@ export async function main(root = process.cwd(), args = process.argv.slice(2)): 
     authorizationPath,
     action === '--initialize',
     async (control) => {
-      const config = loadConfig();
+      const config = candidateConfiguration();
       const startedAt = new Date().toISOString();
       await mkdir(reports, { recursive: true, mode: 0o700 });
       const runId = control.runId!;
@@ -258,14 +298,14 @@ export async function main(root = process.cwd(), args = process.argv.slice(2)): 
             (await loadDataset(datasetPath)).hash !== hash ||
             JSON.stringify(await effectiveIdentity(root, hash, code)) !==
               JSON.stringify(identity) ||
-            JSON.stringify(loadConfig()) !== JSON.stringify(config)
+            JSON.stringify(candidateConfiguration()) !== JSON.stringify(config)
           ) {
             throw new Error('I006 inputs changed during execution');
           }
         },
         verifyDispatch() {
           code.verify();
-          if (JSON.stringify(loadConfig()) !== JSON.stringify(config)) {
+          if (JSON.stringify(candidateConfiguration()) !== JSON.stringify(config)) {
             throw new Error('Configuration changed');
           }
         },
@@ -280,6 +320,10 @@ export async function main(root = process.cwd(), args = process.argv.slice(2)): 
         JSON.stringify({
           runId,
           status: report.status,
+          cohort: report.dataset.cohort,
+          assessment: report.assessment,
+          thresholdGate: report.thresholdGate,
+          experimentalGate: report.experimentalGate,
           observedAttempts: results.reduce(
             (sum, result) => sum + result.observation.inferenceCount,
             0,

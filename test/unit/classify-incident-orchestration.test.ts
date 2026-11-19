@@ -80,27 +80,27 @@ test('I006-AC-01/02 direct classification and abstention do not force a lookup, 
         { role: 'system', content: state.dependencies.systemInstructions },
         { role: 'user', content: 'Descripción suficiente, como INC-142' },
       ],
-      options: { timeoutMs: 45_000, toolsEnabled: true },
+      options: { timeoutMs: 45_000, toolsEnabled: true, eligibleIncidentIds: ['INC-142'] },
     });
   }
 
-  const state = fixture([{ type: 'no_lookup' }, { type: 'abstention' }]);
+  const state = fixture([{ type: 'abstention' }]);
   assert.deepEqual(await classifyIncident(state.dependencies, 'Contexto insuficiente'), {
     status: 'INSUFFICIENT_CONTEXT',
     category: null,
     toolUnavailable: false,
   });
-  assert.equal(state.inferences.length, 2);
+  assert.equal(state.inferences.length, 1);
   assert.equal(state.queries.length, 0);
 });
 
-test('I006-AC-01 sufficient text without any incident reference completes in two inferences', async () => {
-  const state = fixture([{ type: 'no_lookup' }, { type: 'classification', category: 'QUESTION' }]);
+test('I006-AC-01 sufficient text without any incident reference completes in one final inference', async () => {
+  const state = fixture([{ type: 'classification', category: 'QUESTION' }]);
   assert.deepEqual(await classifyIncident(state.dependencies, '¿Cómo cambio mi contraseña?'), {
     status: 'CLASSIFIED',
     category: 'QUESTION',
   });
-  assert.equal(state.inferences.length, 2);
+  assert.equal(state.inferences.length, 1);
   assert.equal(state.queries.length, 0);
 });
 
@@ -187,7 +187,10 @@ test('I006-AC-08/09/12 structurally valid but forbidden requests are rejected be
     [{ ...call, arguments: { incidentId: 'INC-142', extra: true } }],
   ]) {
     const state = fixture([{ type: 'tool_calls', calls }]);
-    await assert.rejects(classifyIncident(state.dependencies, 'incident'), InvalidToolCallError);
+    await assert.rejects(
+      classifyIncident(state.dependencies, 'incident INC-142'),
+      InvalidToolCallError,
+    );
     assert.equal(state.inferences.length, 1);
     assert.equal(state.queries.length, 0);
   }
@@ -213,7 +216,7 @@ test('I006-AC-08/14 structurally malformed port responses remain provider failur
   ];
   for (const response of malformed) {
     const state = fixture([response]);
-    await assert.rejects(classifyIncident(state.dependencies, 'incident'), invalidResponse);
+    await assert.rejects(classifyIncident(state.dependencies, 'incident INC-142'), invalidResponse);
     assert.equal(state.inferences.length, 1);
     assert.equal(state.queries.length, 0);
   }
@@ -225,7 +228,10 @@ test('I006-AC-08/09 second-turn requests cannot execute another tool or trigger 
       { type: 'tool_calls', calls: [call] },
       { type: 'tool_calls', calls },
     ]);
-    await assert.rejects(classifyIncident(state.dependencies, 'incident'), InvalidToolCallError);
+    await assert.rejects(
+      classifyIncident(state.dependencies, 'incident INC-142'),
+      InvalidToolCallError,
+    );
     assert.equal(state.inferences.length, 2);
     assert.equal(state.queries.length, 1);
   }
@@ -234,7 +240,7 @@ test('I006-AC-08/09 second-turn requests cannot execute another tool or trigger 
     { type: 'tool_calls', calls: [call] },
     { type: 'abstention', extra: true },
   ]);
-  await assert.rejects(classifyIncident(state.dependencies, 'incident'), invalidResponse);
+  await assert.rejects(classifyIncident(state.dependencies, 'incident INC-142'), invalidResponse);
   assert.equal(state.inferences.length, 2);
   assert.equal(state.queries.length, 1);
 });
@@ -249,7 +255,7 @@ test('I006-AC-09/10 provider and unexpected errors propagate without recovery ca
   ]) {
     const state = fixture([error]);
     await assert.rejects(
-      classifyIncident(state.dependencies, 'incident'),
+      classifyIncident(state.dependencies, 'incident INC-142'),
       (caught) => caught === error,
     );
     assert.equal(state.inferences.length, 1);
@@ -259,7 +265,7 @@ test('I006-AC-09/10 provider and unexpected errors propagate without recovery ca
   const error = new TypeError('repository programming failure');
   const state = fixture([{ type: 'tool_calls', calls: [call] }], error);
   await assert.rejects(
-    classifyIncident(state.dependencies, 'incident'),
+    classifyIncident(state.dependencies, 'incident INC-142'),
     (caught) => caught === error,
   );
   assert.equal(state.inferences.length, 1);
@@ -285,7 +291,7 @@ test('I006-AC-10 successive operations consume the global budget without reservi
     return result;
   };
 
-  await classifyIncident(state.dependencies, 'incident');
+  await classifyIncident(state.dependencies, 'incident INC-142');
   assert.equal(state.inferences[0]!.options.timeoutMs, 45_000);
   assert.equal(state.queries[0]!.timeoutMs, 5_000);
   assert.equal(state.inferences[1]!.options.timeoutMs, 41_100);
@@ -308,7 +314,7 @@ test('I006-AC-06/10 a hanging tool becomes UNAVAILABLE after five seconds, with 
       finish = resolve;
     });
   };
-  const pending = classifyIncident(state.dependencies, 'incident');
+  const pending = classifyIncident(state.dependencies, 'incident INC-142');
   await ready;
   time = 5_000;
   t.mock.timers.tick(5_000);
@@ -344,7 +350,7 @@ test('I006-AC-09/10 a hanging first inference times out without tool or second i
     });
   };
   const rejected = assert.rejects(
-    classifyIncident(state.dependencies, 'incident'),
+    classifyIncident(state.dependencies, 'incident INC-142'),
     (error) => error instanceof ClassificationError && error.kind === 'timeout',
   );
   await ready;
@@ -385,7 +391,7 @@ test('I006-AC-09/10 an individual second-inference timeout stops the flow despit
         finish = resolve;
       });
     };
-    const pending = classifyIncident(state.dependencies, 'incident');
+    const pending = classifyIncident(state.dependencies, 'incident INC-142');
     let timeoutError: unknown;
     const rejected = assert.rejects(pending, (error) => {
       assert.ok(error instanceof ClassificationError);
@@ -417,7 +423,7 @@ test('I006-AC-10 global exhaustion after a tool prevents the second inference an
     throw new IncidentRepositoryError();
   };
   await assert.rejects(
-    classifyIncident(state.dependencies, 'incident'),
+    classifyIncident(state.dependencies, 'incident INC-142'),
     GlobalDeadlineExceededError,
   );
   assert.equal(state.inferences.length, 1);
@@ -457,7 +463,7 @@ test('I006-AC-09/10 the second inference expires globally with either timer or p
       return incident;
     };
     const rejected = assert.rejects(
-      classifyIncident(state.dependencies, 'incident'),
+      classifyIncident(state.dependencies, 'incident INC-142'),
       GlobalDeadlineExceededError,
     );
     await ready;

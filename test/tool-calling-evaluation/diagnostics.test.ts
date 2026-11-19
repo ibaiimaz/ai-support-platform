@@ -140,7 +140,8 @@ test('AC-21/23/26: technical and unattempted cases are excluded but still block 
   assert.equal(report.metrics.technicalErrors, 1);
   assert.equal(report.metrics.notAttempted, 14);
   assert.equal(report.status, 'INCOMPLETE');
-  assert.equal(report.experimentalGate, 'INCOMPLETE');
+  assert.equal(report.thresholdGate, 'INCOMPLETE');
+  assert.equal(report.experimentalGate, 'NOT_EVALUATED');
 });
 
 test('AC-23/26: low diagnostic recall cannot add an unapproved experimental threshold', async () => {
@@ -165,6 +166,7 @@ test('AC-23/26: low diagnostic recall cannot add an unapproved experimental thre
   assert.equal(report.metrics.abstention.numerator, 51);
   assert.equal(report.metrics.abstention.percentage, 85);
   assert.equal(report.status, 'COMPLETE_PASSED');
-  assert.equal(report.experimentalGate, 'PASSED');
+  assert.equal(report.thresholdGate, 'PASSED');
+  assert.equal(report.experimentalGate, 'NOT_EVALUATED');
   assert.equal(report.deterministicGate, 'NOT_EVALUATED');
 });

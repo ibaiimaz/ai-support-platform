@@ -106,7 +106,8 @@ test('AC-20/23: threshold boundary uses exact counts, not display rounding', asy
   }
   const report = buildReport(dataset, identity, results, new Date().toISOString());
   assert.equal(report.status, 'COMPLETE_FAILED');
-  assert.equal(report.experimentalGate, 'FAILED');
+  assert.equal(report.thresholdGate, 'FAILED');
+  assert.equal(report.experimentalGate, 'NOT_EVALUATED');
 });
 
 test('AC-21/26: zero denominators and invalid prefixes cannot masquerade as complete evaluations', async () => {

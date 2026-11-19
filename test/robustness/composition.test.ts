@@ -147,7 +147,7 @@ test('I003-AC-02 I003-AC-03 I003-AC-13 I006-AC-25 candidato histórico no cambia
   const httpResponse = await app.inject({
     method: 'POST',
     url: '/api/v1/incidents/classify',
-    payload: { description: 'Incidencia de prueba.' },
+    payload: { description: 'Incidencia de prueba, referencia INC-142.' },
   });
   assert.equal(httpResponse.statusCode, 200);
   assert.deepEqual(httpResponse.json(), { category: 'BUG' });
@@ -155,18 +155,21 @@ test('I003-AC-02 I003-AC-03 I003-AC-13 I006-AC-25 candidato histórico no cambia
   const httpPayload = payloads.at(-2)!;
   assert.deepEqual(httpPayload.messages, [
     { role: 'system', content: lookupDecisionInstructions },
-    { role: 'user', content: 'Incidencia de prueba.' },
+    { role: 'user', content: 'Incidencia de prueba, referencia INC-142.' },
   ]);
   assert.notEqual(httpPayload.messages[0]!.content, findPrompt('h2').text);
   assert.equal(httpPayload.model, 'llama3.1:8b');
   assert.equal(httpPayload.stream, false);
   assert.deepEqual(httpPayload.options, { temperature: 0 });
   assert.ok(Array.isArray(httpPayload.tools));
+  assert.deepEqual(httpPayload.tools[0].function.parameters.properties.incidentId.enum, [
+    'INC-142',
+  ]);
   assert.equal(Object.hasOwn(httpPayload, 'format'), false);
   const finalPayload = payloads.at(-1)!;
   assert.deepEqual(finalPayload.messages, [
     { role: 'system', content: classificationFinalInstructions },
-    { role: 'user', content: 'Incidencia de prueba.' },
+    { role: 'user', content: 'Incidencia de prueba, referencia INC-142.' },
   ]);
   assert.equal(Object.hasOwn(finalPayload, 'tools'), false);
   assert.deepEqual(finalPayload.format, toolCallingFinalSchema);

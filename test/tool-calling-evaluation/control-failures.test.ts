@@ -11,7 +11,7 @@ import { sha256 } from '../../src/evaluation/dataset.js';
 import type { EvaluationReport } from '../../src/evaluation/tool-calling/types.js';
 import { candidate, identity } from './helpers.js';
 
-async function fixture() {
+async function fixture(withReferences = true) {
   const root = await mkdtemp(join(tmpdir(), 'i006-control-failure-'));
   const directory = join(root, 'controls');
   const reports = join(root, 'reports');
@@ -27,10 +27,17 @@ async function fixture() {
     approvalReference: 'SIMULATED-ONLY',
     initialize: true,
     execute: true,
-    maximumInferences: 120,
+    maximumInferences: 104,
   };
   await writeFile(authorizationPath, JSON.stringify(authorization));
   const dataset = await candidate();
+  // Reference-bearing simulations preserve the original two-phase control-failure paths.
+  dataset.examples = dataset.examples.slice(0, 2);
+  for (const example of dataset.examples) {
+    if (withReferences) {
+      example.description += ' Referencia INC-142';
+    }
+  }
   await withControl(directory, dataset, identity, authorizationPath, true, async () => {
     assert.fail('Initialization cannot infer');
   });
@@ -317,6 +324,74 @@ test('AC-19/21 zero-attempt control failures do not relax strict ledger/result c
     assert.equal(ledger.reservedSlots, 0);
     assert.equal(ledger.results.length, 1);
     assert.equal(ledger.phase, 'CLOSED');
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+test('AC-19/21/26/29 CODE route reserves classification durably and preserves prefix after revocation', async () => {
+  const f = await fixture(false);
+  try {
+    const request = f.options.request;
+    f.options.request = async (input, init) => {
+      const body = JSON.parse(String(init?.body));
+      assert.equal(body.tools, undefined);
+      assert.ok(body.format);
+      const journal = JSON.parse(
+        await readFile(join(f.directory, 'I006-001-classification.json'), 'utf8'),
+      );
+      assert.equal(journal.phase, 'classification');
+      assert.equal((await f.ledger()).observedAttempts, 1);
+      const response = await request(input, init);
+      await f.revoke();
+      return response;
+    };
+    await f.execute();
+    assert.equal(f.sends(), 1);
+    const report = f.checkpoints.at(-1)!;
+    assert.equal(report.results.length, 2);
+    assert.equal(report.results[0]!.outcome, 'COMPLETED');
+    assert.equal(report.results[0]!.observation.decisionSource, 'CODE');
+    assert.equal(report.results[0]!.phases.decision.started, false);
+    assert.equal(report.results[1]!.error, 'control_error');
+    assert.equal(report.results[1]!.observation.inferenceCount, 0);
+    const ledger = await f.ledger();
+    assert.equal(ledger.reservedSlots, 1);
+    assert.equal(ledger.observedAttempts, 1);
+    assert.equal(ledger.phase, 'CLOSED');
+    await assert.rejects(f.execute());
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+test('AC-19/21/29 failed CODE inference reservation never counts a logical phase as a reserved attempt', async () => {
+  const f = await fixture(false);
+  try {
+    await withControl(
+      f.directory,
+      f.dataset,
+      identity,
+      f.authorizationPath,
+      false,
+      async (control) => {
+        const attempt = control.attempt.bind(control);
+        control.attempt = async (example, phase) => {
+          assert.equal(phase, 'classification');
+          await f.revoke();
+          return attempt(example, phase);
+        };
+        await runControlledEvaluation(f.dataset, control, f.options);
+      },
+    );
+    assert.equal(f.sends(), 0);
+    const failed = f.checkpoints.at(-1)!.results[0]!;
+    assert.equal(failed.phases.classification.started, true);
+    assert.equal(failed.phases.classification.attempts, 0);
+    assert.equal(failed.phases.decision.started, false);
+    assert.equal(failed.observation.inferenceCount, 0);
+    assert.equal(failed.error, 'control_error');
+    assert.equal((await f.ledger()).reservedSlots, 1);
   } finally {
     await rm(f.root, { recursive: true, force: true });
   }

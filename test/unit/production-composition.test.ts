@@ -189,7 +189,7 @@ test('I006-AC-08/09/12/17 native multiple calls and invalid arguments reach poli
     const result = await app.inject({
       method: 'POST',
       url: '/api/v1/incidents/classify',
-      payload: { description: 'DESCRIPTION_SECRET' },
+      payload: { description: 'DESCRIPTION_SECRET INC-142' },
     });
     assert.equal(result.statusCode, 502);
     const body = result.json();
