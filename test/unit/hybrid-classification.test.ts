@@ -13,6 +13,7 @@ import { loadConfig } from '../../src/config.js';
 import { candidate, identity } from '../tool-calling-evaluation/helpers.js';
 import { runEvaluation } from '../../src/evaluation/tool-calling/run.js';
 import { buildReport } from '../../src/evaluation/tool-calling/report.js';
+import { withHistoricalR7 } from '../fixtures/i006-r7-history.js';
 import { candidateModel, plannedPhases } from '../../src/evaluation/tool-calling/protocol.js';
 
 const config = { baseUrl: 'http://simulated.invalid', ...candidateModel };
@@ -290,13 +291,15 @@ test('I006-AC-26/29 identity pins candidate, thinking, digest and quantization w
   });
   const hash = sha256(await readFile('evals/datasets/incidents-tool-calling-v1.json'));
   const code = { identity: identity.codeIdentity, verify() {} };
-  const effective = await effectiveIdentity(process.cwd(), hash, code);
-  assert.equal(effective.model, 'qwen3:8b');
-  assert.equal(effective.modelDigest, candidateModel.digest);
-  assert.equal(effective.think, false);
-  digest = 'a'.repeat(64);
-  await assert.rejects(effectiveIdentity(process.cwd(), hash, code), /model identity/);
-  digest = candidateModel.digest;
-  quantization = 'Q8_0';
-  await assert.rejects(effectiveIdentity(process.cwd(), hash, code), /model identity/);
+  await withHistoricalR7(async (root) => {
+    const effective = await effectiveIdentity(root, hash, code);
+    assert.equal(effective.model, 'qwen3:8b');
+    assert.equal(effective.modelDigest, candidateModel.digest);
+    assert.equal(effective.think, false);
+    digest = 'a'.repeat(64);
+    await assert.rejects(effectiveIdentity(root, hash, code), /model identity/);
+    digest = candidateModel.digest;
+    quantization = 'Q8_0';
+    await assert.rejects(effectiveIdentity(root, hash, code), /model identity/);
+  });
 });

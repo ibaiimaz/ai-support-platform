@@ -1,0 +1,18 @@
+services:
+  knowledge-db:
+    image: pgvector/pgvector:0.8.1-pg16@sha256:33198da2828a14c30348d2ccb4750833d5ed9a44c88d840a0e523d7417120337
+    environment:
+      POSTGRES_USER: support
+      POSTGRES_PASSWORD: support_dev
+      POSTGRES_DB: support
+    ports:
+      - '127.0.0.1:5433:5432'
+    volumes:
+      - knowledge-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U support -d support']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+volumes:
+  knowledge-data:

@@ -241,3 +241,25 @@ se conservan en Git y sus controles privados permanecen intactos. Se reutilizan 
 utilidades de transporte protegido, no una orquestación histórica alternativa.
 
 La implementación de revisión 6 fue aceptada por el responsable el **2026-11-18**, tras segunda revisión técnica independiente **APPROVED** y resolución de los hallazgos HIGH/LOW. Esto cierra la implementación, sin superar la puerta experimental ni marcar I006 Verified. Permisos desactivados y evidencias históricas intactas.
+
+## I007 — Capacidad documental independiente
+
+La [especificación I007](iterations/007-knowledge-rag.md) añade `src/knowledge`: dominio y puertos
+específicos, casos de uso de ingestión/publicación/consulta, adaptadores Ollama y PostgreSQL/pgvector.
+`main.ts` registra la nueva ruta y cierra su pool sin modificar la composición ni la semántica de
+clasificación. La construcción es offline: el pool conecta bajo demanda; no se ingiere ni se llama
+al proveedor al arrancar. Configuración RAG_* independiente.
+
+Un documento tiene identidad lógica estable, activa y staging. Lock de escritor por documento;
+publicación transaccional. Retrieval exacto por coseno en un snapshot REPEATABLE READ READ ONLY
+preservado durante generación: MVCC permite terminar consultas anteriores tras reemplazar versiones.
+Se evita evaluar distancias entre espacios incompatibles antes de filtrar modelo/digest/dimensiones.
+No hay índices ANN, colas, reranking, agentes ni herramientas del generador.
+
+El contexto va en rol usuario; el sistema es fijo. JSON Schema y validación de citas locales no
+prueban fundamentación semántica ni resistencia a instrucciones hostiles. La [guía I007](../knowledge/README.md)
+explica publicación, privacidad, configuración y revisión humana de evals. Tests deterministas y
+PostgreSQL con vectores simulados son evidencia técnica; revisión independiente y baseline real pendientes.
+Las dependencias pg y @types/pg cambian package/lockfile: las identidades congeladas históricas no
+se regeneran para ocultarlo; sus controles pueden rechazar el entorno ampliado, sin cambiar los
+runners, prompts, datos o evidencias originales.

@@ -1,6 +1,14 @@
 # AI Support Platform
 
-## Estado vigente: I006 revisión 7 — 2026-11-19
+## I007 — Asistente RAG: implementación para revisión
+
+I007 incorpora una capacidad documental independiente, con PostgreSQL/pgvector, ingestión Markdown,
+publicación atómica y `POST /api/v1/knowledge/ask`. [Especificación](specs/iterations/007-knowledge-rag.md)
+y [guía de uso, configuración y evals](knowledge/README.md). No se han ejecutado inferencias RAG,
+no hay aceptación funcional ni despliegue autorizado. La clasificación conserva su comportamiento. Las correcciones I007-R1 conservan la identidad
+histórica mediante fixtures verificables; véase el [informe técnico](knowledge/implementation.md).
+
+## Estado de clasificación: I006 revisión 7 — 2026-11-19
 
 Implementación y revisión técnica de R7 **aprobadas**. Cierre de esta fase: **KNOWN_REGRESSION INCOMPLETE**, **INDEPENDENT_HOLDOUT NOT_EXECUTED**. I006 permanece **Implemented**: validación experimental no acreditada, aceptación funcional no concedida y despliegue no autorizado. No se realizarán más experimentos ni modificaciones funcionales en esta fase; todos los permisos de inicialización y ejecución están desactivados.
 

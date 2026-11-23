@@ -26,6 +26,7 @@ import {
   runControlledEvaluation,
 } from '../../src/evaluation/tool-calling/main.js';
 import { identity, perfectResults } from './helpers.js';
+import { withHistoricalR7 } from '../fixtures/i006-r7-history.js';
 
 const holdoutPath = 'evals/datasets/incidents-tool-calling-holdout-v1.json';
 const holdoutIdentity = {
@@ -51,8 +52,17 @@ test('AC-22/26 both frozen cohorts have unique namespaces, strict quotas, hashes
     assert.equal(auth.cohort, cohort);
     assert.equal(auth.initialize, false);
     assert.equal(auth.execute, false);
-    assert.equal(auth.identityHash, null);
-    assert.equal(auth.approvalReference, null);
+    // A retained approval is audit history, not an effective permission to run again.
+    assert.equal(
+      auth.identityHash,
+      cohort === 'KNOWN_REGRESSION'
+        ? 'fed8a5813b03fcf92295a9e57cca6fec1a2371b1ddffc550baa49ade989e5919'
+        : null,
+    );
+    assert.equal(
+      auth.approvalReference,
+      cohort === 'KNOWN_REGRESSION' ? 'I006-R7-KNOWN-EXEC-2026-11-19' : null,
+    );
     assert.equal(
       dataset.examples.filter((e) => plannedPhases(e.description).length === 1).length,
       withoutIds,
@@ -294,37 +304,41 @@ test('AC-12/21/26 independent ledger durably caps holdout at 105 without affecti
 
 test('AC-26 offline identities never consult Ollama; differ by cohort and preserve frozen behavior', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => assert.fail('Ollama access prohibited'));
-  const frozen = JSON.parse(await readFile('evals/experiments/i006-r7-system-freeze.json', 'utf8'));
-  for (const [path, hash] of Object.entries(frozen.files)) {
-    assert.equal(sha256(await readFile(path)), hash);
-  }
-  const results = [];
-  for (const cohort of ['KNOWN_REGRESSION', 'INDEPENDENT_HOLDOUT'] as const) {
-    const settings = cohortSettings(cohort);
-    const { hash } = await loadDataset(join('evals/datasets', settings.datasetFile));
-    const calculated = await effectiveIdentity(
-      process.cwd(),
-      hash,
-      { identity: identity.codeIdentity, verify() {} },
-      cohort,
-      true,
+  await withHistoricalR7(async (root) => {
+    const frozen = JSON.parse(
+      await readFile(join(root, 'evals/experiments/i006-r7-system-freeze.json'), 'utf8'),
     );
-    assert.equal(calculated.cohort, cohort);
-    assert.equal(calculated.maximumInferences, settings.maximumInferences);
-    assert.equal(calculated.model, 'qwen3:8b');
-    assert.equal(calculated.think, false);
-    results.push(sha256(JSON.stringify(calculated)));
-    await assert.rejects(main(process.cwd(), ['--initialize', '--cohort', cohort]), /disabled/);
-    await assert.rejects(main(process.cwd(), ['--execute', '--cohort', cohort]), /disabled/);
-  }
-  assert.notEqual(results[0], results[1]);
-  for (const args of [
-    ['--identity', '--cohort', 'UNKNOWN'],
-    ['--execute', '--force'],
-    ['--execute', '--cohort', 'INDEPENDENT_HOLDOUT', '--resume'],
-  ]) {
-    await assert.rejects(main(process.cwd(), args), /explicit/);
-  }
+    for (const [path, hash] of Object.entries(frozen.files)) {
+      assert.equal(sha256(await readFile(join(root, path))), hash);
+    }
+    const results = [];
+    for (const cohort of ['KNOWN_REGRESSION', 'INDEPENDENT_HOLDOUT'] as const) {
+      const settings = cohortSettings(cohort);
+      const { hash } = await loadDataset(join('evals/datasets', settings.datasetFile));
+      const calculated = await effectiveIdentity(
+        root,
+        hash,
+        { identity: identity.codeIdentity, verify() {} },
+        cohort,
+        true,
+      );
+      assert.equal(calculated.cohort, cohort);
+      assert.equal(calculated.maximumInferences, settings.maximumInferences);
+      assert.equal(calculated.model, 'qwen3:8b');
+      assert.equal(calculated.think, false);
+      results.push(sha256(JSON.stringify(calculated)));
+      await assert.rejects(main(process.cwd(), ['--initialize', '--cohort', cohort]), /disabled/);
+      await assert.rejects(main(process.cwd(), ['--execute', '--cohort', cohort]), /disabled/);
+    }
+    assert.notEqual(results[0], results[1]);
+    for (const args of [
+      ['--identity', '--cohort', 'UNKNOWN'],
+      ['--execute', '--force'],
+      ['--execute', '--cohort', 'INDEPENDENT_HOLDOUT', '--resume'],
+    ]) {
+      await assert.rejects(main(process.cwd(), args), /explicit/);
+    }
+  });
 });
 
 test('AC-21/26 holdout technical failure persists the prior result and partial report without retry or cross-cohort effects', async () => {
@@ -431,14 +445,30 @@ test('AC-26 retained metadata and simulated live metadata produce identical iden
   });
   const { hash } = await loadDataset(holdoutPath);
   const code = { identity: identity.codeIdentity, verify() {} };
-  const offline = await effectiveIdentity(process.cwd(), hash, code, 'INDEPENDENT_HOLDOUT', true);
-  const simulatedLive = await effectiveIdentity(
-    process.cwd(),
-    hash,
-    code,
-    'INDEPENDENT_HOLDOUT',
-    false,
+  await withHistoricalR7(async (root) => {
+    const offline = await effectiveIdentity(root, hash, code, 'INDEPENDENT_HOLDOUT', true);
+    const simulatedLive = await effectiveIdentity(root, hash, code, 'INDEPENDENT_HOLDOUT', false);
+    assert.deepEqual(simulatedLive, offline);
+    assert.equal(JSON.stringify(offline).includes('PRIVATE_ACCOUNT'), false);
+  });
+});
+
+test('I007-R1 original identity mechanism rejects the current expanded tree before consulting any provider', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () =>
+    assert.fail('Identity must reject before provider access'),
   );
-  assert.deepEqual(simulatedLive, offline);
-  assert.equal(JSON.stringify(offline).includes('PRIVATE_ACCOUNT'), false);
+  for (const cohort of ['KNOWN_REGRESSION', 'INDEPENDENT_HOLDOUT'] as const) {
+    const settings = cohortSettings(cohort);
+    const { hash } = await loadDataset(join('evals/datasets', settings.datasetFile));
+    await assert.rejects(
+      effectiveIdentity(
+        process.cwd(),
+        hash,
+        { identity: identity.codeIdentity, verify() {} },
+        cohort,
+        true,
+      ),
+      /Frozen R7 behavior changed/,
+    );
+  }
 });

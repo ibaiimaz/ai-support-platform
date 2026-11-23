@@ -26,7 +26,7 @@ Clasificar una descripción de incidencia en una única categoría:
 | `FEATURE`  | Solicitud de nueva funcionalidad o mejora.                           |
 | `QUESTION` | Consulta o petición de información.                                  |
 
-La [iteración 001](iterations/001-classification.md) define las reglas operativas, el contrato HTTP y los criterios verificables. La interfaz inicial es una API REST síncrona. No hay base de datos, colas, autenticación ni frontend.
+La [iteración 001](iterations/001-classification.md) define las reglas operativas, el contrato HTTP y los criterios verificables. La interfaz inicial es una API REST síncrona. En I001 no había base de datos, colas, autenticación ni frontend; I007 añade persistencia documental independiente.
 
 ## Reglas generales
 
@@ -43,3 +43,11 @@ Cada incremento requiere su propia especificación. No se presupone ninguna infr
 
 La [revisión 6 de I006](iterations/006-tool-calling.md), aprobada e implementada con pruebas deterministas el 2026-11-18, separa decisión de consulta y clasificación final. No cambia las categorías ni
 obliga a consultar por mencionar un ID. En aquella revisión completar una incidencia requería dos inferencias y como máximo una herramienta; revisión 7 reduce a una inferencia la ruta sin referencias elegibles. La implementación no acredita calidad semántica ni autoriza inferencias; su implementación fue aceptada por el responsable el 2026-11-18 tras revisión independiente. La puerta experimental permanece pendiente.
+
+## I007 — Consultas a documentación interna
+
+El asistente RAG responde únicamente con contexto recuperado del corpus autorizado, devuelve fuentes
+versionadas o se abstiene con INSUFFICIENT_CONTEXT. No incorpora conocimientos externos como sustituto
+de evidencia. Un corpus ficticio y evals candidatos permiten preparar revisión posterior; no implican
+representatividad de producción ni aceptación funcional. No cambia la clasificación de incidencias.
+Véase [I007](iterations/007-knowledge-rag.md) y su [guía](../knowledge/README.md).
