@@ -1,5 +1,7 @@
 # I007 — Baseline revisado y experimento A
 
+Cierre consolidado de A/B/Oracle: [registro de experimentación](i007-experimentation-closure.md).
+
 Fecha: 2026-11-25. Estado: **experimento A ejecutado y cerrado; revisión semántica provisional registrada**.
 I007 permanece Implemented, sin aceptación funcional ni validación independiente de producción.
 
