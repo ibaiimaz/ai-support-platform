@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { OllamaKnowledge, ragInstructions } from '../../src/knowledge/ollama.js';
+import {
+  OllamaKnowledge,
+  ragInstructions,
+  originalRagInstructions,
+} from '../../src/knowledge/ollama.js';
 import { loadRagConfig } from '../../src/knowledge/config.js';
+import { hash } from '../../src/knowledge/markdown.js';
 import { chunk } from './helpers.js';
 
 const config = loadRagConfig({
@@ -119,4 +124,64 @@ test('RF-04 distingue indisponibilidad, timeout y tamaño excesivo sin exponer e
       }),
   );
   await assert.rejects(timed.generate('q', [chunk]), { kind: 'GENERATION_TIMEOUT' });
+});
+
+test('RF-05 RF-08 experimento A conserva el prompt baseline y solo sustituye su regla de suficiencia', () => {
+  assert.equal(
+    hash(originalRagInstructions),
+    'bf05f7cd1e2afc6b8c6b425380bdeb0bcb36d6d96445a7cef6f2d01c05175ee2',
+  );
+  assert.equal(
+    hash(ragInstructions),
+    'c7201e51b94307137037c4a4c7b71981dd56a342367ed430edc8229df57d94d5',
+  );
+  const previous = originalRagInstructions.split('\n');
+  const candidate = ragInstructions.split('\n');
+  assert.deepEqual(
+    candidate.slice(0, 4),
+    previous.slice(0, 4),
+    'Grounding, untrusted roles and no tools remain unchanged',
+  );
+  assert.deepEqual(
+    candidate.slice(-2),
+    previous.slice(-2),
+    'Citation rules and JSON-only output remain unchanged',
+  );
+  assert.equal(candidate.length, previous.length + 3);
+  for (const instruction of [
+    'interpretación suficientemente determinada',
+    'responder a todas sus partes',
+    'No asumas referentes, antecedentes ni conversaciones previas',
+    'No enumeres interpretaciones hipotéticas',
+    'falta información necesaria para cualquiera de sus partes',
+    'No establezcas relaciones causales ni funcionales',
+  ]) {
+    assert.ok(ragInstructions.includes(instruction));
+  }
+  assert.ok(
+    !/I007-|webhook|Aster|roles:|ayer|contraseña/i.test(ragInstructions),
+    'No dataset examples or case-specific exceptions',
+  );
+});
+
+test('RF-04 RF-05 experimento A mantiene el payload original salvo el prompt de sistema', async () => {
+  let requests = 0;
+  const provider = new OllamaKnowledge(config, async (_url, init) => {
+    requests++;
+    const body = JSON.parse(String(init?.body));
+    assert.equal(body.messages[0].content, ragInstructions);
+    body.messages[0].content = '[SYSTEM_PROMPT]';
+    // Captured with the unmodified baseline adapter, before implementing experiment A.
+    assert.equal(
+      hash(JSON.stringify(body)),
+      '6267c5cdf93c4eab942b9f568b0570b9c1c70acc3b1bfc30d07404c045b9eecb',
+    );
+    return response(final({ status: 'ANSWER', answer: '15 minutos', chunkIds: ['c1'] }));
+  });
+  assert.deepEqual(await provider.generate('¿Cuál es el plazo configurado?', [chunk]), {
+    status: 'ANSWER',
+    answer: '15 minutos',
+    chunkIds: ['c1'],
+  });
+  assert.equal(requests, 1);
 });
