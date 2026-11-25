@@ -1,9 +1,10 @@
+import { assertKnowledgeCodeIdentity, type KnowledgeCodeIdentity } from './code-identity.js';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { loadRagConfig } from './config.js';
-import { createKnowledgeDependencies } from './composition.js';
-import { hash, readCorpus } from './markdown.js';
+import { loadRagConfig } from '../../knowledge/config.js';
+import { createKnowledgeDependencies } from '../../knowledge/composition.js';
+import { hash, readCorpus } from '../../knowledge/markdown.js';
 import {
   runBaseline,
   summarize,
@@ -11,9 +12,9 @@ import {
   validateDataset,
   type EvalResult,
 } from './evaluation.js';
-import { persist, synchronization } from '../evaluation/durable-files.js';
+import { persist, synchronization } from '../durable-files.js';
 
-async function main() {
+export async function runKnowledgeEvaluation(codeIdentity?: KnowledgeCodeIdentity) {
   const args = process.argv.slice(2);
   const config = loadRagConfig();
   const bytes = await readFile('evals/knowledge/i007-cases.json');
@@ -46,6 +47,7 @@ async function main() {
         corpusHash,
         status: 'CANDIDATE',
         inference: false,
+        codeIdentity,
       }),
     );
     return;
@@ -108,6 +110,9 @@ async function main() {
       'Explicit --run --authorization REFERENCE [--retain-synthetic-content] required',
     );
   }
+  if (!codeIdentity) {
+    throw new Error('Verified build identity required');
+  }
   // Local, manual baseline only. This command is never called by tests or startup.
   const runId = randomUUID();
   const directory = join('evals/reports/i007', runId);
@@ -115,6 +120,8 @@ async function main() {
   const write = (name: string, value: unknown) =>
     persist(join(directory, name), JSON.stringify(value, null, 2) + '\n', true, synchronization);
   await write('started.json', {
+    schemaVersion: 2,
+    codeIdentity,
     runId,
     authorization: args[2],
     date: new Date().toISOString(),
@@ -162,7 +169,7 @@ async function main() {
       JSON.stringify(active.rows.map((row) => [row.document_id, row.id])),
     );
     const report = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       runId,
       datasetId: dataset.datasetId,
       datasetHash: hash(bytes),
@@ -174,28 +181,28 @@ async function main() {
         versionId: row.id,
       })),
       generationIdentity: await composition.dependencies.generator.generationIdentity(),
-      codeHash: hash(
-        await Promise.all(
-          [
-            'domain.ts',
-            'ports.ts',
-            'config.ts',
-            'markdown.ts',
-            'ollama.ts',
-            'postgres.ts',
-            'use-cases.ts',
-            'evaluation.ts',
-            'evaluation-main.ts',
-            'composition.ts',
-          ].map(async (name) => name + ':' + hash(await readFile(join('src/knowledge', name)))),
-        ).then((items) => items.join('\n')),
-      ),
+      codeIdentity,
       independentValidation: false,
       acceptance: 'NOT_ASSESSED',
       results,
     };
     const completed = await runBaseline(
-      composition.dependencies,
+      {
+        ...composition.dependencies,
+        embeddings: {
+          identity: () => composition.dependencies.embeddings.identity(),
+          async embed(text, space) {
+            await assertKnowledgeCodeIdentity(codeIdentity);
+            return composition.dependencies.embeddings.embed(text, space);
+          },
+        },
+        generator: {
+          async generate(question, chunks) {
+            await assertKnowledgeCodeIdentity(codeIdentity);
+            return composition.dependencies.generator.generate(question, chunks);
+          },
+        },
+      },
       dataset,
       async (result) => {
         await write(`${result.id}.json`, result);
@@ -240,8 +247,3 @@ async function main() {
     await composition.close();
   }
 }
-
-main().catch(() => {
-  console.error('La evaluación de conocimiento no pudo prepararse. No se muestran datos internos.');
-  process.exitCode = 1;
-});

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Proyecto educativo backend para explorar aplicaciones que integran LLM mediante iteraciones pequeñas y especificaciones revisadas antes de implementar.",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node scripts/build.js",
     "test": "npm run build && node --test dist/test/**/*.test.js",
     "start": "node dist/src/main.js",
     "format": "prettier --write .",
@@ -21,7 +21,7 @@
     "diagnose:i006-tools-format": "node dist/src/diagnostics/i006-tools-format-main.js",
     "knowledge:migrate": "node dist/src/knowledge/cli.js migrate",
     "knowledge:ingest": "node dist/src/knowledge/cli.js ingest",
-    "eval:knowledge": "node dist/src/knowledge/evaluation-main.js"
+    "eval:knowledge": "node dist/src/evaluation/knowledge/main.js"
   },
   "dependencies": {
     "ajv": "8.20.0",

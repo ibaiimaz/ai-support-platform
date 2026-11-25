@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { format, resolveConfig } from 'prettier';
-import { hash, readCorpus } from '../../src/knowledge/markdown.js';
+import { hash, readCorpus } from '../../../src/knowledge/markdown.js';
 import {
   evaluateCase,
   summarize,
   summarizeHumanReview,
   validateDataset,
-} from '../../src/knowledge/evaluation.js';
-import { KnowledgeError } from '../../src/knowledge/domain.js';
-import { dependencies, chunk } from './helpers.js';
+} from '../../../src/evaluation/knowledge/evaluation.js';
+import { KnowledgeError } from '../../../src/knowledge/domain.js';
+import { dependencies, chunk } from '../../knowledge/helpers.js';
 
 const stableIdentity = {
   expected: { model: 'generator:1', digest: 'b'.repeat(64) },
@@ -106,7 +106,7 @@ test('I007 privacidad: un error arbitrario no se serializa y no se guarda conten
 });
 
 test('I007 baseline para en el primer fallo técnico y persiste primero el progreso anterior', async () => {
-  const { runBaseline } = await import('../../src/knowledge/evaluation.js');
+  const { runBaseline } = await import('../../../src/evaluation/knowledge/evaluation.js');
   const value = await dataset();
   let calls = 0;
   const saved: string[] = [];
@@ -145,7 +145,7 @@ test('I007 baseline para en el primer fallo técnico y persiste primero el progr
 });
 
 test('I007 un baseline completo sigue sin aceptación ni métricas semánticas inventadas', async () => {
-  const { runBaseline } = await import('../../src/knowledge/evaluation.js');
+  const { runBaseline } = await import('../../../src/evaluation/knowledge/evaluation.js');
   const value = await dataset();
   const results = await runBaseline(dependencies(), value, async () => undefined, stableIdentity);
   const metrics = summarize(value, results);
@@ -156,7 +156,7 @@ test('I007 un baseline completo sigue sin aceptación ni métricas semánticas i
 });
 
 test('I007-R2 cambio de digest antes o después de generar conserva parcial y bloquea el resto', async () => {
-  const { runBaseline } = await import('../../src/knowledge/evaluation.js');
+  const { runBaseline } = await import('../../../src/evaluation/knowledge/evaluation.js');
   const value = await dataset();
   for (const mismatchAt of [1, 2, 3, 4]) {
     let reads = 0;
@@ -204,7 +204,7 @@ test('I007-R2 cambio de digest antes o después de generar conserva parcial y bl
 });
 
 test('I007-R2 identidad observada se copia, cambio de modelo falla y no hay comprobación posterior a timeout', async () => {
-  const { runBaseline } = await import('../../src/knowledge/evaluation.js');
+  const { runBaseline } = await import('../../../src/evaluation/knowledge/evaluation.js');
   const value = await dataset();
   const shared = { ...stableIdentity.expected };
   const deps = dependencies();

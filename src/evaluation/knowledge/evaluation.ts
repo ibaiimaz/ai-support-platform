@@ -1,8 +1,8 @@
 import { Ajv } from 'ajv';
-import type { KnowledgeAnswer, GenerationIdentity } from './domain.js';
-import { KnowledgeError } from './domain.js';
-import type { AskDependencies } from './use-cases.js';
-import { askKnowledgeQuestion } from './use-cases.js';
+import type { KnowledgeAnswer, GenerationIdentity } from '../../knowledge/domain.js';
+import { KnowledgeError } from '../../knowledge/domain.js';
+import type { AskDependencies } from '../../knowledge/use-cases.js';
+import { askKnowledgeQuestion } from '../../knowledge/use-cases.js';
 
 export interface RagEvalCase {
   id: string;

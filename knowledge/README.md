@@ -124,6 +124,42 @@ al preparar un baseline; no se declara compatibilidad real sin ejecución autori
 
 ## Evals: preparación sin inferencias
 
+RT-001 separa el evaluador en `src/evaluation/knowledge/`: `evaluation.ts` contiene dataset,
+observación, métricas y revisión; `main.ts` es la entrada del comando público `eval:knowledge`.
+Los tests exclusivos están en `test/evaluation/knowledge/`, con una entrada de descubrimiento
+`test/evaluation/knowledge.test.ts` para el glob existente de npm. Producción no importa evaluación,
+ni directa ni transitivamente; ambos recorridos utilizan el mismo motor `askKnowledgeQuestion()`.
+Motor, adaptadores, composición y CLI administrativa permanecen en `src/knowledge/`.
+
+Los informes futuros usan esquema 2 y `codeIdentity` versión 1. Los informes históricos de
+esquema 1 conservan `codeHash`, que identificaba solo el inventario de fuentes de entonces;
+no se redefine ni se reescribe ese campo. Su lectura y revisión offline siguen siendo compatibles.
+
+`codeIdentity` distingue sourceHash, buildHash, lockfileHash y configurationHash, con inventarios
+ordenados de rutas y SHA-256. Incluye la clausura de módulos propios desde la entrada (también
+runner, verificador de identidad y durable-files), package.json, package-lock.json, tsconfig.json
+y scripts/build.js; registra versiones de Node y TypeScript. Antes de importar el runner para una
+comprobación o ejecución, se recompila esa clausura en memoria, sin escribir archivos, y se compara
+byte a byte con el JavaScript en dist. Una discrepancia impide preparar la evaluación. Antes de
+cada inferencia se vuelven a comprobar fuentes, artefactos y configuración contra el inventario.
+No basta con que exista un build o con que un hash de fuentes coincida.
+
+El build ordinario limpia automáticamente solo dist/ mediante scripts/build.js e invoca TypeScript.
+No hay limpieza manual ni cambios en los comandos públicos. Los tests simulan un build anterior
+con salidas obsoletas y comprueban su eliminación y el descubrimiento único de los tests trasladados.
+El evaluador necesita la instalación de desarrollo existente de TypeScript para verificar el build;
+no se descargan herramientas. No se admite tsconfig extendido/referenciado sin revisar el inventario.
+
+Límites: no se atestiguan todos los bytes de node_modules, el sistema operativo o un servidor
+malicioso. El lockfile y la versión del compilador no prueban integridad de toda dependencia instalada.
+Las comprobaciones puntuales no impiden borrados deliberados, cambios que se reviertan entre lecturas
+o una modificación en el intervalo entre verificación y uso. El modo --run rechaza execArgv y NODE_OPTIONS para no admitir hooks o flags de transformación
+no verificados. Usar el launcher previsto y un árbol dedicado estable; no cambiar código durante un lote.
+La identidad nueva no se atribuye a baseline/A/B/Oracle: conservar sus commits e informes originales.
+
+El [cierre de experimentación](i007-experimentation-closure.md) conserva resultados y limitaciones.
+El prompt A y los defaults Top-K 5/contexto 4/similitud 0,45 no cambian por RT-001.
+
 ```sh
 npm run eval:knowledge -- --check
 ```

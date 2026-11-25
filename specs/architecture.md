@@ -263,3 +263,32 @@ PostgreSQL con vectores simulados son evidencia técnica; revisión independient
 Las dependencias pg y @types/pg cambian package/lockfile: las identidades congeladas históricas no
 se regeneran para ocultarlo; sus controles pueden rechazar el entorno ampliado, sin cambiar los
 runners, prompts, datos o evidencias originales.
+
+## I007 — Separación RT-001 aceptada técnicamente
+
+`src/evaluation/knowledge/` contiene el launcher main.ts, el runner, el verificador de identidad y
+el módulo evaluation.ts, dedicados exclusivamente a evaluación,
+observación, métricas, revisión semántica y composición/persistencia del lote. La dirección
+es evaluación → knowledge; producción no depende directa ni transitivamente de evaluación.
+HTTP y evaluador reutilizan `askKnowledgeQuestion()` y sus puertos, sin un motor RAG alternativo.
+La CLI de ingestión/migración y los adaptadores permanecen en `src/knowledge/`;
+`src/evaluation/durable-files.ts` no cambia. El comando público `eval:knowledge` se mantiene.
+
+Los informes nuevos evolucionan a esquema 2 con codeIdentity versión 1: hashes separados de
+fuentes, artefactos compilados, lockfile y configuración. Se inventaría la clausura propia de la
+entrada, incluida persistencia durable, y se contrasta el JavaScript ejecutable con emisión en
+memoria antes de importar el runner. Antes de cada inferencia se comprueba que el inventario
+permanece inalterado. El esquema 1 conserva el significado histórico de codeHash y sigue siendo
+revisable sin regenerar informes. La verificación no atestigua todos los bytes de dependencias externas.
+
+El build público limpia automáticamente solo dist mediante scripts/build.js antes de compilar.
+La autorización nominal cubre este script de build y el destino de eval:knowledge; package-lock,
+freeze I006 R7, fixture y mecanismo original de rechazo del árbol actual permanecen intactos.
+
+La prueba arquitectónica recorre imports locales transitivos desde producción y comprueba
+la ausencia de aliases no resueltos. Los tests del evaluador están en `test/evaluation/knowledge/`
+y se descubren mediante `test/evaluation/knowledge.test.ts`, sin cambiar el script global de tests.
+RT-002 no está implementado: la composición y el registro HTTP conservan el recorrido previo.
+No cambian prompt, configuración, recuperación, métricas o contratos. Segunda revisión independiente
+de RT-001 favorable y aceptada; integración PostgreSQL real pendiente de validación final.
+No se concede aceptación funcional de I007.
