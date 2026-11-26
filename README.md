@@ -1,12 +1,19 @@
 # AI Support Platform
 
-## I007 — Asistente RAG: implementación para revisión
+## I007 — Asistente RAG: cierre técnico
 
-I007 incorpora una capacidad documental independiente, con PostgreSQL/pgvector, ingestión Markdown,
-publicación atómica y `POST /api/v1/knowledge/ask`. [Especificación](specs/iterations/007-knowledge-rag.md)
-y [guía de uso, configuración y evals](knowledge/README.md). No se han ejecutado inferencias RAG,
-no hay aceptación funcional ni despliegue autorizado. La clasificación conserva su comportamiento. Las correcciones I007-R1 conservan la identidad
-histórica mediante fixtures verificables; véase el [informe técnico](knowledge/implementation.md).
+I007 queda técnicamente completada y cerrada como iteración de desarrollo y aprendizaje el
+**2026-11-26**, con estado formal **Implemented**, sin aceptación funcional ni declaración Verified.
+RAG, RT-001, RT-002 y C completados; revisiones independientes favorables y anotaciones v2 aprobadas.
+Validación final desde 834d1c2: **402 tests satisfactorios, cero fallos y cero omisiones**, incluyendo
+PostgreSQL 16.12/pgvector 0.8.1 desechable. La instancia persistente y las evidencias se conservan intactas.
+
+Se mantienen prompt A, Top-K 5, contexto máximo 4 y similitud 0,45; B 6/6 no se consolida.
+Los lotes baseline/A/B son desarrollo conocido; Oracle es un diagnóstico individual, no validación
+independiente ni aceptación de producción. La clasificación conserva su comportamiento.
+Véanse el [cierre y sus limitaciones](knowledge/i007-closure.md), la
+[especificación](specs/iterations/007-knowledge-rag.md) y la [guía de uso](knowledge/README.md).
+Este cierre no autoriza despliegue ni nuevas ejecuciones.
 
 ## Estado de clasificación: I006 revisión 7 — 2026-11-19
 

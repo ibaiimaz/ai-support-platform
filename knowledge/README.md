@@ -1,6 +1,8 @@
 # I007 — Asistente documental RAG
 
-Implementación para revisión técnica; sin aceptación funcional ni ejecuciones reales autorizadas.
+Iteración técnicamente completada y cerrada el 2026-11-26; estado Implemented, sin aceptación
+funcional ni declaración Verified. [Cierre definitivo y evidencias](i007-closure.md). Los experimentos
+autorizados están concluidos; esta guía no autoriza nuevas ejecuciones.
 La fuente normativa es [I007](../specs/iterations/007-knowledge-rag.md). Clasificación I006 no cambia.
 
 ## Preparación local
@@ -165,7 +167,8 @@ npm run eval:knowledge -- --check
 ```
 
 Dataset **CANDIDATE**, no congelado ni aprobado experimentalmente: 20 casos con 6 directos, 4 combinados,
-4 ausentes, 3 ambiguos y 3 inyecciones indirectas. Revisión humana de expectativas y relevancia pendiente.
+4 ausentes, 3 ambiguos y 3 inyecciones indirectas. Las anotaciones de relevancia v2 están aprobadas
+para desarrollo; esto no convierte el dataset candidato en validación independiente.
 Las tres notas hostiles son sintéticas, sin instrucciones ejecutables por el backend.
 
 Solo tras autorización expresa:
@@ -246,7 +249,8 @@ Referencias de protocolo: [Ollama /api/embed](https://docs.ollama.com/api/embed)
 ## Correcciones I007-R1
 
 Los cuatro hallazgos de la revisión se corrigen sin modificar el alcance funcional, el prompt,
-los modelos ni los controles congelados. La aceptación técnica sigue pendiente de revisión.
+los modelos ni los controles congelados. La revisión técnica está completada; véase el cierre
+para la aceptación comunicada y la distinción respecto a aceptación funcional.
 
 **Identidad del generador en el baseline.** La identidad modelo/digest capturada al preparar el informe
 se mantiene fija. Antes de cada generación se comprueba de nuevo; tras una respuesta completada se
@@ -326,7 +330,7 @@ composición global. RT-002 cambia el hash futuro del módulo de composición kn
 no el alcance de identidad RT-001. Los informes e identidades anteriores permanecen intactos.
 El [informe RT-002](i007-rt002-implementation.md) distingue protección histórica, verificaciones e
 incertidumbre sobre el inventario de 412 archivos. Revisión independiente favorable aceptada,
-sin hallazgos pendientes; PostgreSQL real continúa pendiente de validación final.
+sin hallazgos pendientes; PostgreSQL real validado en instancia desechable: 402/402 tests finales.
 
 ## C — Observabilidad de evaluación (completada y aceptada técnicamente)
 
@@ -347,4 +351,12 @@ La revisión independiente final confirma R1/R2/R3 resueltos. La aprobación hum
 v2 está vinculada a su hash exacto en el informe C; los JSON originales v1/v2 se conservan sin cambios.
 El Chunk Recall retrospectivo de baseline/A no está disponible por falta de identidad suficiente
 para fragmentos no retenidos; su cobertura verificada sigue disponible. C no acredita aceptación
-funcional ni cierre definitivo de I007.
+funcional. El cierre técnico global posterior se registra separadamente al final de esta guía.
+
+## Cierre técnico de I007
+
+RAG, RT-001, RT-002 y C completados; revisiones independientes favorables y anotaciones v2 aprobadas.
+La integración PostgreSQL final queda satisfecha sin modificar infraestructura persistente. Se mantienen
+prompt A y Top-K 5/contexto 4/similitud 0,45. El [cierre](i007-closure.md) distingue los experimentos
+completos del diagnóstico Oracle y registra los límites: recall histórico de baseline/A no disponible,
+uso semántico de evidencia no garantizado y ausencia de validación independiente y aceptación funcional.

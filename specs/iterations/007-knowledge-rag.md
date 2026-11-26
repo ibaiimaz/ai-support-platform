@@ -11,6 +11,24 @@ Esta especificación incorpora las cuatro decisiones que acabas de aprobar y com
 
 El responsable aprueba la especificación y autoriza la implementación integral el 2026-11-23. Los pasajes de propuesta que siguen se conservan como procedencia; DEC-I007-005–012 quedan aprobadas por esa autorización. No se autorizan inferencias reales, evals experimentales ni aceptación funcional.
 
+## Estado vigente — cierre técnico del 2026-11-26
+
+Implementación RAG, experimentación funcional, RT-001, RT-002 y C completadas. Revisiones
+independientes favorables y hallazgos resueltos; anotaciones v2 aprobadas por su identidad y hash
+exactos. Desde 834d1c2, la validación final incluye PostgreSQL 16.12/pgvector 0.8.1 desechable:
+402 tests satisfactorios, cero fallos y cero omisiones. La instancia persistente no se modifica.
+
+El responsable autoriza el cierre técnico y documental como iteración de desarrollo y aprendizaje.
+El estado permanece **Implemented**, sin aceptación funcional, declaración Verified ni despliegue
+autorizado. No se modifica ningún requisito, decisión ni umbral por el cierre. Los estados fechados
+anteriores se conservan como antecedentes, no como pendientes actuales.
+
+El [registro de cierre](../../knowledge/i007-closure.md) recoge commits, resultados y evidencias:
+baseline 17/20; A 18/20 provisional; B 19/20 provisional, sobre los mismos veinte casos de desarrollo.
+Oracle resuelve solo 008 con contexto manual y no se incluye en métricas ordinarias. No hay validación
+independiente. Se mantienen prompt A y 5/4/0,45, sin consolidar B 6/6; el recall retrospectivo de
+baseline/A no está disponible por falta de identidad suficiente de fragmentos no retenidos.
+
 ## 1. Objetivo
 
 Incorporar a AI Support Platform un asistente de soporte técnico capaz de responder preguntas utilizando exclusivamente una base de conocimiento documental.
@@ -555,7 +573,7 @@ Segunda: las citas. El backend podrá verificar que el LLM cita un fragmento exi
 
 Tercera: el baseline. Los aproximadamente 20 casos constituyen un conjunto inicial de aprendizaje y validación, no una prueba estadística definitiva de fiabilidad en producción. Deberemos evitar afirmaciones de calidad que la evidencia no sostenga.
 
-### Estado de I007 — 2026-11-23
+### Estado histórico de I007 — 2026-11-23
 
 Especificación v1.0 aprobada por autorización expresa del responsable. Implementación disponible
 para revisión: **Implemented**, sin aceptación técnica independiente ni aceptación funcional.
@@ -579,14 +597,14 @@ Mi propuesta es que revises ahora el documento como una única unidad. Puedes se
 - CLI de ingestión y evals por defecto --check sin red; --run explícito para inferencias futuras. Baseline secuencial y sin aceptación automática; métricas semánticas requieren revisión humana, no coincidencia literal como sustituto de fundamentación. No se ejecutarán esos modos reales durante la implementación.
 - Revisión independiente y baseline experimental quedan pendientes; no se inventarán umbrales ni informes de revisión de otro revisor.
 
-## 15. Entrega para revisión
+## 15. Entrega inicial para revisión (antecedente)
 
 [Informe técnico y trazabilidad RF/RNF](../../knowledge/implementation.md).
 [Instalación, contratos, configuración y evals](../../knowledge/README.md).
 El corpus y los casos son candidatos sintéticos; revisión humana, revisión técnica independiente,
 baseline real y umbrales de aceptación siguen pendientes. Implemented no equivale a Verified.
 
-## 16. Correcciones I007-R1 para revisión
+## 16. Correcciones I007-R1 para revisión (antecedente resuelto)
 
 Autorizadas por el responsable, sin cambios de alcance ni umbrales. La revisión externa se toma de
 los cuatro hallazgos reproducidos en su instrucción. Se preservan los artefactos históricos y el

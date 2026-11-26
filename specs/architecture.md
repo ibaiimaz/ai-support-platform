@@ -246,8 +246,8 @@ La implementación de revisión 6 fue aceptada por el responsable el **2026-11-1
 
 La [especificación I007](iterations/007-knowledge-rag.md) añade `src/knowledge`: dominio y puertos
 específicos, casos de uso de ingestión/publicación/consulta, adaptadores Ollama y PostgreSQL/pgvector.
-`main.ts` registra la nueva ruta y cierra su pool sin modificar la composición ni la semántica de
-clasificación. La construcción es offline: el pool conecta bajo demanda; no se ingiere ni se llama
+`buildApp()` registra ambas rutas con dependencias explícitas; `main.ts` utiliza la composición
+central y gestiona arranque y cierre, conservando la semántica de clasificación. La construcción es offline: el pool conecta bajo demanda; no se ingiere ni se llama
 al proveedor al arrancar. Configuración RAG_* independiente.
 
 Un documento tiene identidad lógica estable, activa y staging. Lock de escritor por documento;
@@ -259,7 +259,9 @@ No hay índices ANN, colas, reranking, agentes ni herramientas del generador.
 El contexto va en rol usuario; el sistema es fijo. JSON Schema y validación de citas locales no
 prueban fundamentación semántica ni resistencia a instrucciones hostiles. La [guía I007](../knowledge/README.md)
 explica publicación, privacidad, configuración y revisión humana de evals. Tests deterministas y
-PostgreSQL con vectores simulados son evidencia técnica; revisión independiente y baseline real pendientes.
+PostgreSQL con vectores simulados son evidencia técnica; revisión independiente y experimentación
+funcional concluidas. El [cierre I007](../knowledge/i007-closure.md) registra sus límites, sin
+aceptación funcional ni validación independiente.
 Las dependencias pg y @types/pg cambian package/lockfile: las identidades congeladas históricas no
 se regeneran para ocultarlo; sus controles pueden rechazar el entorno ampliado, sin cambiar los
 runners, prompts, datos o evidencias originales.
@@ -291,7 +293,7 @@ y se descubren mediante `test/evaluation/knowledge.test.ts`, sin cambiar el scri
 En el cierre de RT-001, RT-002 aún no estaba implementado. La sección siguiente describe
 la composición y el registro HTTP vigentes tras implementar RT-002.
 No cambian prompt, configuración, recuperación, métricas o contratos. Segunda revisión independiente
-de RT-001 favorable y aceptada; integración PostgreSQL real pendiente de validación final.
+de RT-001 favorable y aceptada; integración PostgreSQL final completada desde 834d1c2.
 No se concede aceptación funcional de I007.
 
 ## I007 — RT-002 aceptado técnicamente
@@ -317,7 +319,7 @@ sin ampliar su alcance o modificar hashes históricos. Se conservan freeze/fixtu
 histórico de 412 archivos no se ha localizado nominalmente y no se declara verificado por completo.
 
 La verificación determinista conservada termina con 381 tests satisfactorios, 0 fallos y una
-integración PostgreSQL omitida. PostgreSQL real queda pendiente de validación final autorizada;
+integración PostgreSQL omitida entonces. La validación final posterior pasa 402/402 tests sin omisiones;
 la revisión independiente de RT-002 está aceptada, sin conceder aceptación funcional de I007. El [informe RT-002](../knowledge/i007-rt002-implementation.md)
 registra resultados, identidades futuras y modificaciones históricas nominalmente autorizadas.
 
@@ -325,4 +327,18 @@ RT-002 queda aceptado técnicamente por el responsable el 2026-11-26 tras revisi
 favorable sin hallazgos pendientes. La incidencia listen EPERM del sandbox y su resolución por
 ejecución satisfactoria del archivo afectado se atribuyen al proceso revisor, separado de las
 verificaciones del implementador. Persisten las limitaciones de cierre, inventario de 412 archivos
-no localizado y PostgreSQL real pendiente; no se autoriza el experimento C ni nuevas inferencias.
+no localizado; la integración PostgreSQL final y C están completadas. No se autorizan nuevas inferencias.
+
+## I007 — Cierre técnico definitivo y observabilidad C
+
+I007 queda cerrada técnicamente el 2026-11-26, con estado Implemented, sin aceptación funcional ni
+Verified. RT-001/RT-002 y C completados y revisados favorablemente. Los informes del evaluador actual
+son esquema 3: añaden annotationIdentity y diagnostics sin redefinir metrics ni codeHash históricos.
+Anotaciones v2 aprobadas para desarrollo; v1/v2 originales y todos los derivados conservados.
+
+La configuración mantenida es prompt A, Top-K 5, contexto máximo 4 y similitud 0,45, sin promover
+los valores experimentales 6/6 de B. Baseline/A carecen de Chunk Recall retrospectivo verificable;
+la cobertura por contenido retenido se informa independientemente. PostgreSQL 16.12 y pgvector 0.8.1
+validados en instancia temporal aislada: 402 tests satisfactorios, cero fallos y cero omisiones.
+El [cierre](../knowledge/i007-closure.md) enlaza commits, evidencias y limitaciones. No cambia el diseño
+aprobado, los contratos públicos, los controles históricos ni se autoriza despliegue o nuevas ejecuciones.

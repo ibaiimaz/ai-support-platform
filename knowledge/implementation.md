@@ -1,5 +1,12 @@
 # I007 — Informe de implementación para revisión
 
+> Actualización de cierre — 2026-11-26: I007 técnicamente completada y cerrada como desarrollo y
+> aprendizaje; mantiene Implemented, sin aceptación funcional ni Verified. La integración PostgreSQL
+> que aparece pendiente en los resultados históricos siguientes quedó satisfecha desde 834d1c2:
+> 402 tests satisfactorios, cero fallos y cero omisiones, PostgreSQL 16.12/pgvector 0.8.1 desechable.
+> Véase el [cierre definitivo](i007-closure.md). Se conservan los resultados y límites originales;
+> las indicaciones de revisión, baseline o integración pendientes pertenecen a sus fechas anteriores.
+
 Fecha: 2026-11-23. Estado: **Implemented**, sin revisión independiente, baseline ni aceptación funcional.
 No se han ejecutado inferencias reales, ingestiones con Ollama ni evals experimentales. No hay commits,
 push, despliegue ni cambios en experimentos históricos. No se declara finalización técnica de todos los

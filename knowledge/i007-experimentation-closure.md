@@ -68,7 +68,13 @@ privados y excluidos de Git. Se añaden revisiones; no se reescriben originales 
 La documentación conserva identidades y referencias para reconstruir los recorridos anteriores.
 No se han cambiado defaults, prompt, corpus, dataset, modelos, contratos o configuración persistente.
 
-RT-001 y RT-002 se analizan en [la propuesta arquitectónica](i007-refactoring-analysis.md), como
-intervenciones independientes pendientes de aprobación. La mejora de scores del experimento C
-continúa diferida y no se implementa. Este cierre no autoriza evaluaciones, refactorizaciones,
-ingestas, migraciones ni despliegue.
+El análisis posterior de RT-001/RT-002 se implementó y cerró en 27cc98a/2309812, con revisión
+independiente favorable. C se consolidó en 834d1c2 y sus anotaciones v2 están aprobadas. El
+[cierre técnico definitivo](i007-closure.md) registra integración PostgreSQL 16.12/pgvector 0.8.1
+satisfactoria (402/402 tests, ninguna omisión), sin nuevas evaluaciones funcionales.
+
+El análisis retrospectivo C conserva la cobertura por contexto verificado, pero deja Chunk Recall de
+baseline/A no disponible: faltan identidades verificables para fragmentos fuera del contexto retenido.
+B retiene todos los fragmentos recuperados y permite calcular recall 97,44 %. Similitudes históricas
+ausentes no se reconstruyen. No se modifican informes ni resultados originales.
+Este cierre no autoriza nuevas evaluaciones, inferencias, ingestas, migraciones ni despliegue.

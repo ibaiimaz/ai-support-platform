@@ -1,5 +1,12 @@
 # I007 — Cierre técnico de RT-002
 
+> Actualización de cierre — 2026-11-26: I007 técnicamente completada y cerrada como desarrollo y
+> aprendizaje; mantiene Implemented, sin aceptación funcional ni Verified. La integración PostgreSQL
+> que aparece pendiente en los resultados históricos siguientes quedó satisfecha desde 834d1c2:
+> 402 tests satisfactorios, cero fallos y cero omisiones, PostgreSQL 16.12/pgvector 0.8.1 desechable.
+> Véase el [cierre definitivo](i007-closure.md). Se conservan los resultados y límites originales;
+> las indicaciones de revisión, baseline o integración pendientes pertenecen a sus fechas anteriores.
+
 Implementación: 2026-11-25. Cierre documental: 2026-11-26.
 Estado: **Implementado y aceptado técnicamente tras revisión independiente favorable**. Base: 27cc98a, RT-001 cerrado. RT-002 se implementa bajo autorización nominal
 sobre cuatro fuentes, ocho suites históricas y cuatro documentos, con tests y este informe nuevos.

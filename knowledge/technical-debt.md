@@ -6,10 +6,10 @@ cuentan con una [propuesta separada por intervención](i007-refactoring-analysis
 Estos registros no autorizan implementación, cambio de arquitectura ni una nueva iteración.
 Se preservan el comportamiento, los contratos y las evidencias actuales.
 
-| ID     | Trabajo diferido                                                                                                        | Situación observada                                                                                                      | Alcance de una futura revisión                                                                                                                  |
-| ------ | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| RT-001 | Separar todo el código exclusivo de evaluación del código de producción, manteniendo un motor RAG compartido.           | Resuelto: evaluador en src/evaluation/knowledge y tests separados; build limpio e identidad de fuentes/build verificada. | Aceptado tras segunda revisión independiente. Mantener límites de identidad; integración PostgreSQL real pendiente de validación final.         |
-| RT-002 | Revisar y homogeneizar el registro de rutas knowledge y classify, con composición centralizada e inyección consistente. | Implementado: composición central, ambas rutas en buildApp, arranque separado y cierre idempotente de recursos.          | Revisión independiente favorable aceptada, sin hallazgos pendientes; conservar límites de cierre/inventarios y validación PostgreSQL pendiente. |
+| ID     | Trabajo diferido                                                                                                        | Situación observada                                                                                                      | Alcance de una futura revisión                                                                                                                     |
+| ------ | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RT-001 | Separar todo el código exclusivo de evaluación del código de producción, manteniendo un motor RAG compartido.           | Resuelto: evaluador en src/evaluation/knowledge y tests separados; build limpio e identidad de fuentes/build verificada. | Aceptado tras segunda revisión independiente. Mantener límites de identidad; integración PostgreSQL final satisfecha (402/402), véase cierre I007. |
+| RT-002 | Revisar y homogeneizar el registro de rutas knowledge y classify, con composición centralizada e inyección consistente. | Implementado: composición central, ambas rutas en buildApp, arranque separado y cierre idempotente de recursos.          | Revisión independiente favorable aceptada, sin hallazgos pendientes; conservar límites de cierre/inventarios; PostgreSQL final validado (402/402). |
 
 RT-001 se implementa después del cierre experimental y bajo autorización específica, con
 traslado del evaluador y sus tests, script público conservado, inventario de identidad actualizado
@@ -38,4 +38,14 @@ no se modifican. La revisión independiente final confirma R1/R2/R3 resueltos y 
 aprueba las anotaciones v2 por su identidad y SHA-256 exactos, registrados en el informe C.
 C queda completada. Se conserva la limitación de Chunk Recall retrospectivo no disponible para
 baseline/A, las similitudes históricas ausentes y el inventario nominal de 412 archivos no localizado.
-No hay aceptación funcional ni cierre definitivo de I007.
+I007 queda cerrada técnicamente como desarrollo/aprendizaje; mantiene Implemented, sin aceptación funcional.
+
+## Estado al cierre definitivo — 2026-11-26
+
+RT-001, RT-002 y C completados y aceptados técnicamente. La integración PostgreSQL pendiente en sus
+cierres históricos queda satisfecha desde 834d1c2: 402 tests pasan, cero fallos y cero omisiones.
+El [cierre definitivo](i007-closure.md) conserva límites de identidad/runtime y ciclo de vida, el
+inventario de 412 archivos no localizado y las limitaciones de las métricas retrospectivas.
+La revisión de calidad/seguridad sobre datos independientes y las hipótesis de ruido/posición y uso
+de evidencia permanecen trabajo futuro sin autorización. No se abre nueva iteración ni se declara
+aceptación funcional o Verified.

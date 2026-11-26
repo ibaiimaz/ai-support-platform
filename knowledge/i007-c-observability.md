@@ -1,5 +1,12 @@
 # I007 — C: métricas y observabilidad del evaluador
 
+> Actualización de cierre — 2026-11-26: I007 técnicamente completada y cerrada como desarrollo y
+> aprendizaje; mantiene Implemented, sin aceptación funcional ni Verified. La integración PostgreSQL
+> que aparece pendiente en los resultados históricos siguientes quedó satisfecha desde 834d1c2:
+> 402 tests satisfactorios, cero fallos y cero omisiones, PostgreSQL 16.12/pgvector 0.8.1 desechable.
+> Véase el [cierre definitivo](i007-closure.md). Se conservan los resultados y límites originales;
+> las indicaciones de revisión, baseline o integración pendientes pertenecen a sus fechas anteriores.
+
 Fecha: 2026-11-26. Base: 2309812, con RT-001 y RT-002 cerrados. C completada y aceptada técnicamente tras revisión independiente final; sin nuevas inferencias
 ni aceptación funcional de I007. No se cambia el motor RAG, las rutas,
 prompts, configuración, corpus, dataset histórico, dependencias o permisos de experimentación.
