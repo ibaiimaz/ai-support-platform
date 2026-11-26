@@ -1,3 +1,10 @@
+import {
+  newObservation,
+  observeRetrieval,
+  observeContext,
+  type RetrievalObservation,
+  type EvaluationObservability,
+} from './observability.js';
 import { Ajv } from 'ajv';
 import type { KnowledgeAnswer, GenerationIdentity } from '../../knowledge/domain.js';
 import { KnowledgeError } from '../../knowledge/domain.js';
@@ -114,6 +121,7 @@ export function validateDataset(
 }
 
 export interface EvalResult {
+  observation?: RetrievalObservation;
   id: string;
   status: 'VALID' | 'TECHNICAL_ERROR';
   latencyMs: number;
@@ -145,6 +153,7 @@ export async function evaluateCase(
   dependencies: AskDependencies,
   item: RagEvalCase,
   retainSyntheticContent = false,
+  observability?: EvaluationObservability,
 ): Promise<EvalResult> {
   const started = performance.now();
   const result: EvalResult = {
@@ -156,6 +165,9 @@ export async function evaluateCase(
     retrievedChunkIds: [],
     expectedStatus: item.expectedStatus,
   };
+  if (observability) {
+    result.observation = newObservation();
+  }
   let context: { chunkId: string; content: string }[] = [];
   if (item.group === 'injection') {
     result.attackExposure = {
@@ -169,6 +181,9 @@ export async function evaluateCase(
     ...dependencies,
     generator: {
       async generate(question, chunks) {
+        if (result.observation && observability) {
+          observeContext(result.observation, chunks, observability);
+        }
         const exposure = result.attackExposure;
         if (exposure) {
           exposure.generationRequested = true;
@@ -186,6 +201,9 @@ export async function evaluateCase(
           exposure.hostilePayloadSent = exposure.matchedPayloadIds.length ? null : false;
         }
         const answer = await dependencies.generator.generate(question, chunks);
+        if (result.observation) {
+          result.observation.generation = 'COMPLETED';
+        }
         if (exposure && exposure.matchedPayloadIds.length) {
           // A completed generator response confirms the request boundary; retrieval alone does not.
           exposure.hostilePayloadSent = true;
@@ -196,6 +214,9 @@ export async function evaluateCase(
   };
   try {
     const answer = await askKnowledgeQuestion(observed, item.question, (chunks, latency) => {
+      if (result.observation && observability) {
+        observeRetrieval(result.observation, chunks, observability.annotations);
+      }
       result.retrievalLatencyMs = latency;
       result.retrievedDocumentIds = [...new Set(chunks.map((chunk) => chunk.documentId))];
       result.retrievedChunkIds = chunks.map((chunk) => chunk.chunkId);
@@ -417,6 +438,7 @@ export async function runBaseline(
   saveCase: (result: EvalResult) => Promise<void>,
   generation: { expected: GenerationIdentity; read: () => Promise<GenerationIdentity> },
   retainSyntheticContent = false,
+  observability?: EvaluationObservability,
 ): Promise<EvalResult[]> {
   const results: EvalResult[] = [];
   const expected = Object.freeze({ ...generation.expected });
@@ -449,7 +471,7 @@ export async function runBaseline(
         },
       },
     };
-    const result = await evaluateCase(guarded, item, retainSyntheticContent);
+    const result = await evaluateCase(guarded, item, retainSyntheticContent, observability);
     if (requested) {
       result.generationIdentity = identity;
     }

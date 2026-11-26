@@ -18,7 +18,7 @@ RT-002 se cierra bajo autorización nominal y revisión independiente favorable 
 sus resultados y limitaciones se registran en
 [el informe RT-002](i007-rt002-implementation.md). No se declara aceptación funcional de I007.
 
-## Mejora pendiente para el experimento C — puntuaciones de recuperación
+## C — Métricas y observabilidad completadas y aceptadas técnicamente
 
 Registrada el 2026-11-25 tras I007-DIAGNOSTIC-B-001, sin implementación ni autorización de C.
 Incorporar las puntuaciones de similitud coseno de los chunks recuperados a los informes de evaluación,
@@ -30,3 +30,12 @@ Conservar los scores efectivos de cada ejecución, no reconstruir ni rellenar re
 históricos con puntuaciones de un embedding nuevo. Revisar esquema, compatibilidad y tests antes de
 implementar, sin alterar ranking o métricas por el mero hecho de observarlos. RT-002 y RT-001 están
 cerrados técnicamente; esta observabilidad es una preparación específica para C.
+
+La mejora se implementa bajo la autorización posterior C del 2026-11-26, sin nuevas inferencias.
+Incluye anotaciones propuestas, ranking/scores, cobertura por fragmentos y exposición global/cruzada;
+véase [el informe C](i007-c-observability.md). Los informes originales y sus puntuaciones ausentes
+no se modifican. La revisión independiente final confirma R1/R2/R3 resueltos y el responsable
+aprueba las anotaciones v2 por su identidad y SHA-256 exactos, registrados en el informe C.
+C queda completada. Se conserva la limitación de Chunk Recall retrospectivo no disponible para
+baseline/A, las similitudes históricas ausentes y el inventario nominal de 412 archivos no localizado.
+No hay aceptación funcional ni cierre definitivo de I007.

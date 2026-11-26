@@ -154,8 +154,10 @@ test('RT-001 entrypoint --check funciona offline y no genera evidencias', async 
         },
       },
     );
-    const { codeIdentity, ...checked } = JSON.parse(result.stdout);
+    const { codeIdentity, annotationIdentity, ...checked } = JSON.parse(result.stdout);
     assert.equal(codeIdentity.correspondence, 'VERIFIED');
+    assert.equal(annotationIdentity.id, 'I007-CHUNK-RELEVANCE-001');
+    assert.equal(annotationIdentity.version, 2);
     assert.ok(
       codeIdentity.sources.some(
         (item: { path: string }) => item.path === 'src/evaluation/durable-files.ts',

@@ -135,7 +135,7 @@ test('RT-001 R2 identidad distingue fuentes/build, persistencia, lockfile y buil
   }
 });
 
-test('RT-001 R2 revisión offline conserva compatibilidad con informes v1 y v2 serializados', async () => {
+test('RT-001 R2 revisión offline conserva compatibilidad con informes v1, v2 y v3 serializados', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'i007-review-'));
   try {
     const datasetBytes = await readFile('evals/knowledge/i007-cases.json');
@@ -146,7 +146,7 @@ test('RT-001 R2 revisión offline conserva compatibilidad con informes v1 y v2 s
       '--check',
     ]);
     const { corpusHash, codeIdentity } = JSON.parse(checked.stdout);
-    for (const schemaVersion of [1, 2]) {
+    for (const schemaVersion of [1, 2, 3]) {
       const report = {
         schemaVersion,
         datasetHash: hash(datasetBytes),

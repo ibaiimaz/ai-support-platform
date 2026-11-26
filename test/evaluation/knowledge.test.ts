@@ -2,3 +2,4 @@
 import './knowledge/evaluation.test.js';
 import './knowledge/separation.test.js';
 import './knowledge/identity.test.js';
+import './knowledge/observability.test.js';

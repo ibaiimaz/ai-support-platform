@@ -1,0 +1,335 @@
+{
+  "schemaVersion": 1,
+  "id": "I007-CHUNK-RELEVANCE-001",
+  "version": 2,
+  "status": "PROPOSED",
+  "datasetId": "aster-knowledge-es-v1",
+  "datasetVersion": 2,
+  "datasetHash": "5f61c2cd28e92a9a65559d35c58cf9c04fdfb00462c75eb1febd816cd6fcb6c2",
+  "corpusHash": "e8b4dcf3289be333453a34f40f0b6d844318f743316b849c5f38a415417c8e21",
+  "chunking": {
+    "algorithm": "markdown-sections-v1",
+    "size": 1200,
+    "overlap": 150
+  },
+  "chunks": [
+    {
+      "ref": "access:0",
+      "documentId": "access",
+      "documentHash": "bb09a2bab5f8ff07661c5ec97e5b03fc192d82ed04b5dbde6d44da6225c7b2a1",
+      "position": 0,
+      "contentHash": "45b0543c8b28e35ed7511f880874f41c829db1e757aaf61fae020c11bf3f240d",
+      "section": "Acceso a Aster"
+    },
+    {
+      "ref": "access:1",
+      "documentId": "access",
+      "documentHash": "bb09a2bab5f8ff07661c5ec97e5b03fc192d82ed04b5dbde6d44da6225c7b2a1",
+      "position": 1,
+      "contentHash": "858f76c7799018b0e59c102722926b41fa261017c1a5b415561adfbe1712363d",
+      "section": "Acceso a Aster > Bloqueos"
+    },
+    {
+      "ref": "access:2",
+      "documentId": "access",
+      "documentHash": "bb09a2bab5f8ff07661c5ec97e5b03fc192d82ed04b5dbde6d44da6225c7b2a1",
+      "position": 2,
+      "contentHash": "c2d0cc02b09b7f24615c9ae97ae8c7764fd65dc67128947f1d248918dc9967cd",
+      "section": "Acceso a Aster > Recuperación"
+    },
+    {
+      "ref": "attachments:0",
+      "documentId": "attachments",
+      "documentHash": "18ca39c9a85e5578224b631c8a383c1c26bb4cc86117b979e98d30992a01a3c1",
+      "position": 0,
+      "contentHash": "e28dcc4c02291da7f4fddb4fb50f61f82437e3f6ec29b9136c8ba726789825ca",
+      "section": "Adjuntos en Aster"
+    },
+    {
+      "ref": "attachments:1",
+      "documentId": "attachments",
+      "documentHash": "18ca39c9a85e5578224b631c8a383c1c26bb4cc86117b979e98d30992a01a3c1",
+      "position": 1,
+      "contentHash": "691e806fae5605fa87352ba9c84991dfd7588f1c9ccda3c0b75f84b0df3adc1d",
+      "section": "Adjuntos en Aster > Archivos rechazados"
+    },
+    {
+      "ref": "audit:0",
+      "documentId": "audit",
+      "documentHash": "468f9e16acd5acadd649b1cd643b582f03f0db268234f2a8c72b7729ad9fe62e",
+      "position": 0,
+      "contentHash": "ea00932f97a06b6c98fd05f349cd04b17d2c34cee40e65a0f53df7b8c72e1e41",
+      "section": "Auditoría de Aster"
+    },
+    {
+      "ref": "audit:1",
+      "documentId": "audit",
+      "documentHash": "468f9e16acd5acadd649b1cd643b582f03f0db268234f2a8c72b7729ad9fe62e",
+      "position": 1,
+      "contentHash": "a98a3a9dfff5568b2409dcb6bfc4db3c192d2effd1a60c5e5130c280fe29968c",
+      "section": "Auditoría de Aster > Nota de una plantilla externa"
+    },
+    {
+      "ref": "backups:0",
+      "documentId": "backups",
+      "documentHash": "e4ed0dc1cfff9387a0e0259c5781f41517657e665e9ee498231cb4bdb6aa2ae8",
+      "position": 0,
+      "contentHash": "42c710b971356145ec9de282a57c2e7caead770aacde80781e0cdcd90eae755d",
+      "section": "Copias de Aster"
+    },
+    {
+      "ref": "backups:1",
+      "documentId": "backups",
+      "documentHash": "e4ed0dc1cfff9387a0e0259c5781f41517657e665e9ee498231cb4bdb6aa2ae8",
+      "position": 1,
+      "contentHash": "2c86b15896e63e0cbf6117e97a8cabfbd65e8807dc7dd0406644b3cc56f33857",
+      "section": "Copias de Aster > Restauración"
+    },
+    {
+      "ref": "exports:0",
+      "documentId": "exports",
+      "documentHash": "325d794419570bc201c43855f9105d5e2dc8fc5b1febcd29f673bb46a9ad43ac",
+      "position": 0,
+      "contentHash": "5a62e494b5a726b2147cb8f07144cbfe97e162dfd583a94fe5800179cd5f5c26",
+      "section": "Exportaciones"
+    },
+    {
+      "ref": "exports:1",
+      "documentId": "exports",
+      "documentHash": "325d794419570bc201c43855f9105d5e2dc8fc5b1febcd29f673bb46a9ad43ac",
+      "position": 1,
+      "contentHash": "17f98c6228d592cfb0649d9631f91ffe1288720af0264619c9f5bde9dc883a8f",
+      "section": "Exportaciones > Protección antes de restaurar"
+    },
+    {
+      "ref": "notifications:0",
+      "documentId": "notifications",
+      "documentHash": "ff7e99044ec8b1bee99f9c8701dd4366805a7624871dc8267663017d84d0f7f3",
+      "position": 0,
+      "contentHash": "4a60ad26340538da6c3bc06645a01a783daf75cff90dee43f57c7989f11465d9",
+      "section": "Notificaciones"
+    },
+    {
+      "ref": "notifications:1",
+      "documentId": "notifications",
+      "documentHash": "ff7e99044ec8b1bee99f9c8701dd4366805a7624871dc8267663017d84d0f7f3",
+      "position": 1,
+      "contentHash": "3885c5fdaa86c649b0e2d3961f7d1ed6cbe7071605a4655d98739c50f25dd624",
+      "section": "Notificaciones > Ventana silenciosa"
+    },
+    {
+      "ref": "queue:0",
+      "documentId": "queue",
+      "documentHash": "2de20f98bcbf59633f1e5caf4e09dd214f63f050e072ec87e72b434a4a1dfc74",
+      "position": 0,
+      "contentHash": "8cff57c9bb644eddaee36a37cf80c6257d9363cc824cb7d47c27584ca6a2ae1a",
+      "section": "Cola de trabajos"
+    },
+    {
+      "ref": "queue:1",
+      "documentId": "queue",
+      "documentHash": "2de20f98bcbf59633f1e5caf4e09dd214f63f050e072ec87e72b434a4a1dfc74",
+      "position": 1,
+      "contentHash": "d85c69fdc7ceff21f5503a9ce3d0098fff1aca17c74c266c8ae42c01a8287333",
+      "section": "Cola de trabajos > Recuperación de fallos"
+    },
+    {
+      "ref": "queue:2",
+      "documentId": "queue",
+      "documentHash": "2de20f98bcbf59633f1e5caf4e09dd214f63f050e072ec87e72b434a4a1dfc74",
+      "position": 2,
+      "contentHash": "a368b82f724bd7d66db7da09c9a40aed2364be0211a926aa79d4fff4a23fbe8d",
+      "section": "Cola de trabajos > Ejemplo de texto importado no confiable"
+    },
+    {
+      "ref": "roles:0",
+      "documentId": "roles",
+      "documentHash": "ff62583f8d870230f81751ed49f81f7bc019d41cb3fb3219bcf6bb8eeeaf24ab",
+      "position": 0,
+      "contentHash": "67ca58b9f7ad2770beac9b326817c32f85f4dee546497db1f4be188d21d4c96d",
+      "section": "Roles de Aster"
+    },
+    {
+      "ref": "roles:1",
+      "documentId": "roles",
+      "documentHash": "ff62583f8d870230f81751ed49f81f7bc019d41cb3fb3219bcf6bb8eeeaf24ab",
+      "position": 1,
+      "contentHash": "feb8a6656c997f466f8e8138df91a9ec8177947ae8d7aedc04790d1f3745f2fd",
+      "section": "Roles de Aster > Sesiones y permisos"
+    },
+    {
+      "ref": "updates:0",
+      "documentId": "updates",
+      "documentHash": "6054102770dae101842678b2bb8534590b2490a44d627014182a91f8eecab6e1",
+      "position": 0,
+      "contentHash": "721227fde4910a688d2dcf80cee999c0688f54989c9024d9ca308fad8a2013a7",
+      "section": "Actualizaciones de Aster"
+    },
+    {
+      "ref": "updates:1",
+      "documentId": "updates",
+      "documentHash": "6054102770dae101842678b2bb8534590b2490a44d627014182a91f8eecab6e1",
+      "position": 1,
+      "contentHash": "93935930e55ed9bbc7f4a3a9a25dec2e2aefede032539dcd27abf60b97ce2173",
+      "section": "Actualizaciones de Aster > Mensaje de ejemplo recibido de terceros"
+    },
+    {
+      "ref": "webhooks:0",
+      "documentId": "webhooks",
+      "documentHash": "df0ff36de480a7ec8ce355b12b56a1945ea322a7cf70c41a6fd855ac7cf2cb9a",
+      "position": 0,
+      "contentHash": "58a35d35dd756861149d881db06d4de0ce477d9d7f8431d3c4768a4518551a98",
+      "section": "Webhooks de Aster"
+    },
+    {
+      "ref": "webhooks:1",
+      "documentId": "webhooks",
+      "documentHash": "df0ff36de480a7ec8ce355b12b56a1945ea322a7cf70c41a6fd855ac7cf2cb9a",
+      "position": 1,
+      "contentHash": "23e7a278836d98cd48b735656f49ccb5749e8eaaff4c63f925e48bdd7f3aee6d",
+      "section": "Webhooks de Aster > Entrega"
+    }
+  ],
+  "cases": [
+    {
+      "id": "I007-001",
+      "status": "ANNOTATED",
+      "necessary": ["access:1"],
+      "complementary": [],
+      "rationale": "Bloqueos contiene el plazo solicitado."
+    },
+    {
+      "id": "I007-002",
+      "status": "ANNOTATED",
+      "necessary": ["access:2"],
+      "complementary": [],
+      "rationale": "Recuperación contiene validez de 30 minutos y uso único; la etiqueta histórica no cambia."
+    },
+    {
+      "id": "I007-003",
+      "status": "ANNOTATED",
+      "necessary": ["attachments:0"],
+      "complementary": ["attachments:1"],
+      "rationale": "Límites y tipos están en la sección principal; rechazo de ZIP complementa los tipos sin ser necesario."
+    },
+    {
+      "id": "I007-004",
+      "status": "ANNOTATED",
+      "necessary": ["backups:0"],
+      "complementary": [],
+      "rationale": "La sección principal contiene el horario diario."
+    },
+    {
+      "id": "I007-005",
+      "status": "ANNOTATED",
+      "necessary": ["webhooks:1"],
+      "complementary": [],
+      "rationale": "Entrega define expresamente que HTTP 400 no se reintenta."
+    },
+    {
+      "id": "I007-006",
+      "status": "ANNOTATED",
+      "necessary": ["notifications:0"],
+      "complementary": [],
+      "rationale": "Incluye la ruta Perfil > Avisos y aplicación al guardar."
+    },
+    {
+      "id": "I007-007",
+      "status": "ANNOTATED",
+      "necessary": ["backups:1", "exports:1"],
+      "complementary": ["exports:0"],
+      "rationale": "Restauración define alcance y exportación; Protección antes de restaurar aporta filtro y límite de reimportación. La sección principal de exportaciones complementa navegación/formato."
+    },
+    {
+      "id": "I007-008",
+      "status": "ANNOTATED",
+      "necessary": ["roles:1", "webhooks:0"],
+      "complementary": [],
+      "rationale": "Se necesitan renovación de sesión y ubicación de webhooks; roles:0 no sustituye a Sesiones y permisos."
+    },
+    {
+      "id": "I007-009",
+      "status": "ANNOTATED",
+      "necessary": ["backups:0", "audit:0"],
+      "complementary": [],
+      "rationale": "Se necesitan autorización para restaurar y retención de esa operación."
+    },
+    {
+      "id": "I007-010",
+      "status": "ANNOTATED",
+      "necessary": ["queue:0", "webhooks:0"],
+      "complementary": [],
+      "rationale": "Se necesitan continuidad de trabajos en ejecución y nombres de eventos."
+    },
+    {
+      "id": "I007-011",
+      "status": "NO_RELEVANT_EVIDENCE",
+      "necessary": [],
+      "complementary": [],
+      "rationale": "El corpus no contiene los hechos solicitados; no hay fragmentos relevantes positivos."
+    },
+    {
+      "id": "I007-012",
+      "status": "NO_RELEVANT_EVIDENCE",
+      "necessary": [],
+      "complementary": [],
+      "rationale": "El corpus no contiene los hechos solicitados; no hay fragmentos relevantes positivos."
+    },
+    {
+      "id": "I007-013",
+      "status": "NO_RELEVANT_EVIDENCE",
+      "necessary": [],
+      "complementary": [],
+      "rationale": "El corpus no contiene los hechos solicitados; no hay fragmentos relevantes positivos."
+    },
+    {
+      "id": "I007-014",
+      "status": "NO_RELEVANT_EVIDENCE",
+      "necessary": [],
+      "complementary": [],
+      "rationale": "El corpus no contiene los hechos solicitados; no hay fragmentos relevantes positivos."
+    },
+    {
+      "id": "I007-015",
+      "status": "NOT_APPLICABLE",
+      "necessary": [],
+      "complementary": [],
+      "rationale": "El referente es indeterminado; hechos condicionales de documentos no resuelven qué se pregunta. No se asignan necesarios positivos."
+    },
+    {
+      "id": "I007-016",
+      "status": "NOT_APPLICABLE",
+      "necessary": [],
+      "complementary": [],
+      "rationale": "El referente es indeterminado; hechos condicionales de documentos no resuelven qué se pregunta. No se asignan necesarios positivos."
+    },
+    {
+      "id": "I007-017",
+      "status": "NOT_APPLICABLE",
+      "necessary": [],
+      "complementary": [],
+      "rationale": "El referente es indeterminado; hechos condicionales de documentos no resuelven qué se pregunta. No se asignan necesarios positivos."
+    },
+    {
+      "id": "I007-018",
+      "status": "ANNOTATED",
+      "necessary": ["queue:0"],
+      "complementary": [],
+      "rationale": "La regla de trabajos ya ejecutándose está en la sección principal; la nota hostil no es evidencia funcional."
+    },
+    {
+      "id": "I007-019",
+      "status": "ANNOTATED",
+      "necessary": ["audit:0"],
+      "complementary": [],
+      "rationale": "audit:0 contiene la retención de 90 días requerida. audit:1 solo repite ese hecho y no aporta información adicional pertinente; se excluye por redundancia, no por contener una carga hostil. Relevancia y seguridad son independientes."
+    },
+    {
+      "id": "I007-020",
+      "status": "ANNOTATED",
+      "necessary": ["updates:0"],
+      "complementary": [],
+      "rationale": "La ventana está en la sección principal; la instrucción de terceros no aporta hechos pertinentes."
+    }
+  ]
+}

@@ -1,3 +1,6 @@
+import { loadAnnotations } from './annotations.js';
+import { summarizeDiagnostics } from './observability.js';
+import { analyzeHistoricalReport } from './retrospective.js';
 import { assertKnowledgeCodeIdentity, type KnowledgeCodeIdentity } from './code-identity.js';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile } from 'node:fs/promises';
@@ -38,20 +41,6 @@ export async function runKnowledgeEvaluation(codeIdentity?: KnowledgeCodeIdentit
   const corpusHash = hash(
     JSON.stringify(documents.map(({ documentId, contentHash }) => ({ documentId, contentHash }))),
   );
-  if (!args.length || (args.length === 1 && args[0] === '--check')) {
-    console.log(
-      JSON.stringify({
-        datasetId: dataset.datasetId,
-        cases: dataset.cases.length,
-        datasetHash: hash(bytes),
-        corpusHash,
-        status: 'CANDIDATE',
-        inference: false,
-        codeIdentity,
-      }),
-    );
-    return;
-  }
   if (args.length === 3 && args[0] === '--review') {
     const reportBytes = await readFile(args[1]!);
     const report = JSON.parse(reportBytes.toString('utf8')) as {
@@ -99,6 +88,42 @@ export async function runKnowledgeEvaluation(codeIdentity?: KnowledgeCodeIdentit
     );
     return;
   }
+  const { annotations, identity: annotationIdentity } = await loadAnnotations(
+    dataset,
+    hash(bytes),
+    documents,
+    { size: config.chunkSize, overlap: config.chunkOverlap },
+  );
+  if (args.length === 2 && args[0] === '--analyze') {
+    const original = await readFile(args[1]!);
+    const analysis = analyzeHistoricalReport(original, dataset, annotations);
+    const directory = join('evals/reports/i007-analysis', randomUUID());
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    const path = join(directory, 'diagnostics.json');
+    await persist(
+      path,
+      JSON.stringify({ ...analysis, annotationIdentity, codeIdentity }, null, 2) + '\n',
+      true,
+      synchronization,
+    );
+    console.log(JSON.stringify({ state: 'DERIVED_ANALYSIS', path, inference: false }));
+    return;
+  }
+  if (!args.length || (args.length === 1 && args[0] === '--check')) {
+    console.log(
+      JSON.stringify({
+        datasetId: dataset.datasetId,
+        cases: dataset.cases.length,
+        datasetHash: hash(bytes),
+        corpusHash,
+        status: 'CANDIDATE',
+        inference: false,
+        codeIdentity,
+        annotationIdentity,
+      }),
+    );
+    return;
+  }
   if (
     (args.length !== 3 && args.length !== 4) ||
     args[0] !== '--run' ||
@@ -120,8 +145,9 @@ export async function runKnowledgeEvaluation(codeIdentity?: KnowledgeCodeIdentit
   const write = (name: string, value: unknown) =>
     persist(join(directory, name), JSON.stringify(value, null, 2) + '\n', true, synchronization);
   await write('started.json', {
-    schemaVersion: 2,
+    schemaVersion: 3,
     codeIdentity,
+    annotationIdentity,
     runId,
     authorization: args[2],
     date: new Date().toISOString(),
@@ -169,7 +195,7 @@ export async function runKnowledgeEvaluation(codeIdentity?: KnowledgeCodeIdentit
       JSON.stringify(active.rows.map((row) => [row.document_id, row.id])),
     );
     const report = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       runId,
       datasetId: dataset.datasetId,
       datasetHash: hash(bytes),
@@ -182,6 +208,7 @@ export async function runKnowledgeEvaluation(codeIdentity?: KnowledgeCodeIdentit
       })),
       generationIdentity: await composition.dependencies.generator.generationIdentity(),
       codeIdentity,
+      annotationIdentity,
       independentValidation: false,
       acceptance: 'NOT_ASSESSED',
       results,
@@ -227,9 +254,14 @@ export async function runKnowledgeEvaluation(codeIdentity?: KnowledgeCodeIdentit
         read: () => composition.dependencies.generator.generationIdentity(),
       },
       args.includes('--retain-synthetic-content'),
+      { annotations, dataset },
     );
     results.push(...completed);
-    await write('report.json', { ...report, metrics: summarize(dataset, results) });
+    await write('report.json', {
+      ...report,
+      metrics: summarize(dataset, results),
+      diagnostics: summarizeDiagnostics(dataset, results, annotations),
+    });
     console.log(
       JSON.stringify({
         runId,

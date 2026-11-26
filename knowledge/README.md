@@ -327,3 +327,24 @@ no el alcance de identidad RT-001. Los informes e identidades anteriores permane
 El [informe RT-002](i007-rt002-implementation.md) distingue protección histórica, verificaciones e
 incertidumbre sobre el inventario de 412 archivos. Revisión independiente favorable aceptada,
 sin hallazgos pendientes; PostgreSQL real continúa pendiente de validación final.
+
+## C — Observabilidad de evaluación (completada y aceptada técnicamente)
+
+El evaluador añade anotaciones de fragmentos v2 aprobadas para desarrollo, sin cambiar el dataset
+histórico ni el motor RAG. Los informes nuevos de esquema 3 separan metrics históricas de diagnostics:
+Chunk Recall@K, Context Evidence Coverage, ranking/similitud y exposición global/cruzada.
+Las anotaciones y sus denominadores, límites y resultados retrospectivos están en
+[el informe C](i007-c-observability.md). Son diagnósticos, sin umbrales o aceptación automática.
+La revisión de informes v1/v2/v3 sigue offline; los originales no se reescriben.
+
+`npm run eval:knowledge -- --analyze RUTA-REPORT-JSON` genera un derivado privado de informes
+históricos v1/v2, sin embeddings, generación o consultas SQL. Las similitudes no retenidas permanecen
+no disponibles; no se infieren desde ejecuciones posteriores. No se incluye Oracle Context.
+El modo --check valida el sidecar y registra su identidad separadamente de fuentes/build.
+Esta implementación no autoriza --run, nuevas inferencias ni evaluaciones funcionales.
+
+La revisión independiente final confirma R1/R2/R3 resueltos. La aprobación humana de las anotaciones
+v2 está vinculada a su hash exacto en el informe C; los JSON originales v1/v2 se conservan sin cambios.
+El Chunk Recall retrospectivo de baseline/A no está disponible por falta de identidad suficiente
+para fragmentos no retenidos; su cobertura verificada sigue disponible. C no acredita aceptación
+funcional ni cierre definitivo de I007.
