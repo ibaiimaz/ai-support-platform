@@ -13,7 +13,7 @@ import { OllamaClassificationLlm } from '../../src/infrastructure/ollama/ollama-
 import { parseToolCallingResponse } from '../../src/infrastructure/ollama/tool-calling-protocol.js';
 import { runEvaluation } from '../../src/evaluation/tool-calling/run.js';
 import { buildReport, saveReport } from '../../src/evaluation/tool-calling/report.js';
-import { buildApp } from '../../src/http/app.js';
+import { buildClassificationTestApp as buildApp } from '../http/application-fixture.js';
 import { candidate, identity } from '../tool-calling-evaluation/helpers.js';
 
 const secret = 'PRIVATE_MODEL_TEXT';

@@ -288,7 +288,41 @@ freeze I006 R7, fixture y mecanismo original de rechazo del árbol actual perman
 La prueba arquitectónica recorre imports locales transitivos desde producción y comprueba
 la ausencia de aliases no resueltos. Los tests del evaluador están en `test/evaluation/knowledge/`
 y se descubren mediante `test/evaluation/knowledge.test.ts`, sin cambiar el script global de tests.
-RT-002 no está implementado: la composición y el registro HTTP conservan el recorrido previo.
+En el cierre de RT-001, RT-002 aún no estaba implementado. La sección siguiente describe
+la composición y el registro HTTP vigentes tras implementar RT-002.
 No cambian prompt, configuración, recuperación, métricas o contratos. Segunda revisión independiente
 de RT-001 favorable y aceptada; integración PostgreSQL real pendiente de validación final.
 No se concede aceptación funcional de I007.
+
+## I007 — RT-002 aceptado técnicamente
+
+Esta sección actualiza la composición vigente; los recorridos anteriores se conservan como antecedentes.
+main.ts carga ambas configuraciones y llama a createApplicationDependencies en src/composition.ts.
+La factoría central construye conocimiento y clasificación con sus factorías independientes y devuelve
+ApplicationDependencies más un close agregado idempotente. No hay contenedor DI ni proveedor genérico.
+buildApp recibe ambas capacidades y registra classify y knowledge con errores/logging comunes,
+sin instanciar recursos. Los adaptadores HTTP y los casos de uso mantienen sus contratos intactos.
+
+main.ts separa importación de arranque mediante comprobación del entrypoint, expone startApplication
+para pruebas deterministas y conserva listen en 127.0.0.1:3000 y señales SIGINT/SIGTERM. onClose libera
+recursos y elimina los listeners propios. Fallos de composición parcial, preparación y listen intentan
+liberar los recursos ya adquiridos; el cierre se comparte por promesa para evitar duplicados incluso
+si falla. No se garantiza liberación física cuando pool.end rechaza ni se añaden reintentos.
+
+La CLI administrativa y el evaluador siguen importando src/knowledge/composition.ts, sin HTTP ni
+la composición global. No se alteran motor RAG, prompts, parámetros, métricas o esquemas públicos.
+La clausura RT-001 recoge automáticamente el cambio en la factoría knowledge para identidades futuras,
+sin ampliar su alcance o modificar hashes históricos. Se conservan freeze/fixture I006 y rechazo del
+árbol actual. La autorización nominal cubre las fuentes y tests históricos evolucionados; el inventario
+histórico de 412 archivos no se ha localizado nominalmente y no se declara verificado por completo.
+
+La verificación determinista conservada termina con 381 tests satisfactorios, 0 fallos y una
+integración PostgreSQL omitida. PostgreSQL real queda pendiente de validación final autorizada;
+la revisión independiente de RT-002 está aceptada, sin conceder aceptación funcional de I007. El [informe RT-002](../knowledge/i007-rt002-implementation.md)
+registra resultados, identidades futuras y modificaciones históricas nominalmente autorizadas.
+
+RT-002 queda aceptado técnicamente por el responsable el 2026-11-26 tras revisión independiente
+favorable sin hallazgos pendientes. La incidencia listen EPERM del sandbox y su resolución por
+ejecución satisfactoria del archivo afectado se atribuyen al proceso revisor, separado de las
+verificaciones del implementador. Persisten las limitaciones de cierre, inventario de 412 archivos
+no localizado y PostgreSQL real pendiente; no se autoriza el experimento C ni nuevas inferencias.

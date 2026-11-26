@@ -1,9 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Writable } from 'node:stream';
-import Fastify from 'fastify';
-import { registerKnowledgeRoute } from '../../src/http/knowledge-route.js';
-import { registerErrors } from '../../src/http/error-handler.js';
+import { buildApp } from '../../src/http/app.js';
+import { classificationFixture } from '../http/application-fixture.js';
 import { KnowledgeError, knowledgeErrorKinds } from '../../src/knowledge/domain.js';
 import { createKnowledgeDependencies } from '../../src/knowledge/composition.js';
 import { dependencies } from './helpers.js';
@@ -11,10 +10,10 @@ import { dependencies } from './helpers.js';
 const url = '/api/v1/knowledge/ask';
 
 function appFor(deps = dependencies()) {
-  const app = Fastify({ ajv: { customOptions: { coerceTypes: false, removeAdditional: false } } });
-  registerErrors(app);
-  registerKnowledgeRoute(app, deps, 50);
-  return app;
+  return buildApp({
+    classification: classificationFixture(),
+    knowledge: { dependencies: deps, maxQuestionLength: 50 },
+  });
 }
 
 test('RF-04 contrato ANSWER, abstención HTTP 200 y entrada estricta', async () => {
@@ -105,15 +104,20 @@ test('RF-09 logs por defecto no incluyen pregunta, respuesta, documentos ni erro
       done();
     },
   });
-  const app = Fastify({ logger: { stream }, disableRequestLogging: true });
-  registerErrors(app);
   const deps = dependencies();
   deps.generator.generate = async () => {
     throw new KnowledgeError('GENERATION_UNAVAILABLE');
   };
-  registerKnowledgeRoute(app, deps, 100);
+  const app = buildApp(
+    {
+      classification: classificationFixture(),
+      knowledge: { dependencies: deps, maxQuestionLength: 100 },
+    },
+    { stream },
+  );
   await app.inject({ method: 'POST', url, payload: { question: 'PRIVATE_QUESTION' } });
   await app.close();
+  assert.ok(logs.join('').includes('/api/v1/knowledge/ask'));
   assert.ok(!logs.join('').includes('PRIVATE_QUESTION'));
   assert.ok(!logs.join('').includes('15 minutos'));
 });
@@ -133,7 +137,6 @@ test('RNF-05 construir y cerrar composición no accede a Ollama ni PostgreSQL', 
 });
 
 test('RNF-09 ambas rutas coexisten manteniendo el contrato y flujo de clasificación I006', async () => {
-  const { buildApp } = await import('../../src/http/app.js');
   const { createClassificationDependencies } = await import('../../src/composition.js');
   const { loadConfig } = await import('../../src/config.js');
   const classification = createClassificationDependencies(loadConfig());
@@ -145,8 +148,10 @@ test('RNF-09 ambas rutas coexisten manteniendo el contrato y flujo de clasificac
       return { type: 'classification', category: 'BUG' };
     },
   };
-  const app = buildApp(classification);
-  registerKnowledgeRoute(app, dependencies(), 100);
+  const app = buildApp({
+    classification,
+    knowledge: { dependencies: dependencies(), maxQuestionLength: 100 },
+  });
   try {
     const result = await app.inject({
       method: 'POST',

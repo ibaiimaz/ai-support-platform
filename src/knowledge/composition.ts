@@ -4,6 +4,7 @@ import { OllamaKnowledge } from './ollama.js';
 import { PostgresKnowledgeRepository } from './postgres.js';
 
 export function createKnowledgeDependencies(config: RagConfig = loadRagConfig()) {
+  const provider = new OllamaKnowledge(config);
   // Pool construction does not connect; startup never ingests or invokes a model.
   const pool = new Pool({
     connectionString: config.databaseUrl,
@@ -15,7 +16,7 @@ export function createKnowledgeDependencies(config: RagConfig = loadRagConfig())
   pool.on('error', () => {
     // Idle connection errors contain database details; never log the raw error.
   });
-  const provider = new OllamaKnowledge(config);
+  let closing: Promise<void> | undefined;
   return {
     dependencies: {
       embeddings: provider,
@@ -26,6 +27,9 @@ export function createKnowledgeDependencies(config: RagConfig = loadRagConfig())
       maxContextChunks: config.maxContextChunks,
     },
     pool,
-    close: () => pool.end(),
+    close() {
+      closing ??= Promise.resolve().then(() => pool.end());
+      return closing;
+    },
   };
 }

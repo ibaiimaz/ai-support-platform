@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createClassificationDependencies } from '../../src/composition.js';
 import { loadConfig } from '../../src/config.js';
-import { buildApp } from '../../src/http/app.js';
+import { buildClassificationTestApp as buildApp } from '../http/application-fixture.js';
 import { lookupDecisionInstructions } from '../../src/infrastructure/ollama/lookup-decision-instructions.js';
 import { classificationFinalInstructions } from '../../src/infrastructure/ollama/classification-final-instructions.js';
 import { classificationInstructions } from '../../src/infrastructure/ollama/classification-instructions.js';

@@ -1,24 +1,49 @@
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { loadConfig } from './config.js';
-import { createClassificationDependencies } from './composition.js';
+import { createApplicationDependencies } from './composition.js';
 import { buildApp } from './http/app.js';
-import { registerKnowledgeRoute } from './http/knowledge-route.js';
 import { loadRagConfig } from './knowledge/config.js';
-import { createKnowledgeDependencies } from './knowledge/composition.js';
 
-try {
-  const app = buildApp(createClassificationDependencies(loadConfig()), true);
-  const ragConfig = loadRagConfig();
-  const knowledge = createKnowledgeDependencies(ragConfig);
-  registerKnowledgeRoute(app, knowledge.dependencies, ragConfig.maxQuestionLength);
-  app.addHook('onClose', () => knowledge.close());
-  await app.listen({ host: '127.0.0.1', port: 3000 });
-
-  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-    process.once(signal, () => {
-      void app.close();
+export async function startApplication(
+  compose = () => createApplicationDependencies(loadConfig(), loadRagConfig()),
+  createApp = buildApp,
+) {
+  const composition = await compose();
+  let app: ReturnType<typeof buildApp> | undefined;
+  const signals = ['SIGINT', 'SIGTERM'] as const;
+  const closeOnSignal = () => {
+    void app?.close().catch(() => {
+      console.error('No se pudo completar el cierre de la aplicación.');
+      process.exitCode = 1;
     });
+  };
+  try {
+    app = createApp(composition.dependencies, true);
+    app.addHook('onClose', async () => {
+      for (const signal of signals) {
+        process.removeListener(signal, closeOnSignal);
+      }
+      await composition.close();
+    });
+    await app.listen({ host: '127.0.0.1', port: 3000 });
+    for (const signal of signals) {
+      process.once(signal, closeOnSignal);
+    }
+    return app;
+  } catch (error) {
+    try {
+      await app?.close();
+    } finally {
+      await composition.close();
+    }
+    throw error;
   }
-} catch {
-  console.error('No se pudo iniciar la aplicación. Compruebe la configuración y el puerto 3000.');
-  process.exitCode = 1;
+}
+
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
+  startApplication().catch(() => {
+    console.error('No se pudo iniciar la aplicación. Compruebe la configuración y el puerto 3000.');
+    process.exitCode = 1;
+  });
 }

@@ -305,3 +305,25 @@ no hay reintentos ni continuación del lote, aunque el proveedor pueda seguir ca
 árbol actual por el mecanismo original. Procedencia y verificaciones en
 [test/fixtures/I006-R7.md](../test/fixtures/I006-R7.md). Se necesita disponer de ese objeto Git y sus
 dependencias históricas; no se descarga ni se aproxima un fixture si faltan.
+
+## RT-002 — Composición y ciclo de vida
+
+La composición central createApplicationDependencies en src/composition.ts conserva las factorías
+independientes de clasificación y conocimiento. buildApp recibe explícitamente ambas capacidades,
+registra las dos rutas, errores y logging común; no crea proveedores ni abre conexiones.
+main.ts exporta startApplication y solo arranca automáticamente al ejecutarse como entrada del
+servidor. Importarlo no abre puertos, conecta ni infiere. main gestiona listen, señales y onClose.
+
+El cierre de aplicación y el cierre independiente de knowledge comparten cada uno su primera promesa:
+llamadas repetidas/concurrentes no duplican pool.end, tampoco reintentan un cierre fallido. La
+composición parcial libera knowledge si falla preparar clasificación; main intenta cerrar aplicación
+y recursos ante fallo de construcción, preparación o listen, y retira sus listeners de señales.
+Un error del recurso puede impedir confirmar su liberación física; se conserva el rechazo, no se
+promete cierre exitoso de una dependencia que ha fallado. No se añade un timeout global de apagado.
+
+Las CLI y el evaluador continúan usando solo la composición independiente knowledge, sin HTTP ni
+composición global. RT-002 cambia el hash futuro del módulo de composición knowledge y su build,
+no el alcance de identidad RT-001. Los informes e identidades anteriores permanecen intactos.
+El [informe RT-002](i007-rt002-implementation.md) distingue protección histórica, verificaciones e
+incertidumbre sobre el inventario de 412 archivos. Revisión independiente favorable aceptada,
+sin hallazgos pendientes; PostgreSQL real continúa pendiente de validación final.

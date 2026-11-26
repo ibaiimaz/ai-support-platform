@@ -382,7 +382,8 @@ test('I004-AC-09 I004-AC-12 I006-AC-25 payload histórico intacto y composición
   });
   const mainSource = await readFile('src/main.ts', 'utf8');
   assert.ok(mainSource.includes("from './composition.js'"));
-  assert.ok(mainSource.includes('buildApp(createClassificationDependencies(loadConfig()), true)'));
+  assert.ok(mainSource.includes('createApplicationDependencies(loadConfig(), loadRagConfig())'));
+  assert.ok(mainSource.includes('createApp(composition.dependencies, true)'));
   assert.ok(!mainSource.includes('OllamaClassifier'));
   const production = createClassificationDependencies(loadConfig({}));
   assert.ok(production.llm instanceof OllamaClassificationLlm);

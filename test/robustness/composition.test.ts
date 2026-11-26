@@ -16,7 +16,7 @@ import {
 } from '../../src/evaluation/report.js';
 import { OllamaClassifier } from '../../src/infrastructure/ollama/ollama-classifier.js';
 import { classificationInstructions } from '../../src/infrastructure/ollama/classification-instructions.js';
-import { buildApp } from '../../src/http/app.js';
+import { buildClassificationTestApp as buildApp } from '../http/application-fixture.js';
 import { runEvaluation } from '../../src/evaluation/run-evaluation.js';
 import { experimentProject, fixturePair } from './helpers.js';
 import { ollamaInference } from '../../src/infrastructure/ollama/inference-descriptor.js';
@@ -179,7 +179,8 @@ test('I003-AC-02 I003-AC-03 I003-AC-13 I006-AC-25 candidato histórico no cambia
   assert.notEqual(finalPayload.messages[0]!.content, findPrompt('h2').text);
   assert.equal(sha256(classificationInstructions), baselinePrompt.sha256);
   const source = await readFile('src/main.ts', 'utf8');
-  assert.ok(source.includes('buildApp(createClassificationDependencies(loadConfig()), true)'));
+  assert.ok(source.includes('createApplicationDependencies(loadConfig(), loadRagConfig())'));
+  assert.ok(source.includes('createApp(composition.dependencies, true)'));
   assert.ok(!source.includes('OllamaClassifier'));
 });
 

@@ -1,7 +1,7 @@
 # I007 — Análisis de RT-001 y RT-002
 
 Fecha: 2026-11-25. RT-001 implementado y aceptado tras segunda revisión independiente; R1 y R2 resueltos.
-RT-002 permanece como propuesta no implementada. Las secciones de diseño siguientes conservan
+RT-002 implementado y aceptado tras revisión independiente favorable, sin hallazgos pendientes; véase [el informe de implementación](i007-rt002-implementation.md). Las secciones de diseño siguientes conservan
 el análisis previo; el estado resultante se documenta en [la guía vigente](README.md#evals-preparación-sin-inferencias).
 Se autorizaron nominalmente el destino de eval:knowledge y, en la ampliación de R1, el script
 build de package.json; no se levanta la protección de otros archivos, freezes o evidencias históricas.

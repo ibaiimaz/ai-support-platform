@@ -7,7 +7,7 @@ import {
   type ProviderFailure,
 } from '../../src/application/classification-errors.js';
 import { categories } from '../../src/domain/classification.js';
-import { buildApp } from '../../src/http/app.js';
+import { buildClassificationTestApp as buildApp } from '../http/application-fixture.js';
 import { createClassificationDependencies } from '../../src/composition.js';
 import { toolCallingInstructions } from '../../src/infrastructure/ollama/tool-calling-instructions.js';
 import { Writable } from 'node:stream';

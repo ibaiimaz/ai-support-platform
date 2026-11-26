@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Writable } from 'node:stream';
-import { buildApp } from '../../src/http/app.js';
+import { buildClassificationTestApp as buildApp } from './application-fixture.js';
 import type { ToolCallingDependencies } from '../../src/application/classify-incident.js';
 import type { LlmResponse } from '../../src/application/classification-llm.js';
 import type { IncidentRepository } from '../../src/application/incident-repository.js';
